@@ -1,0 +1,70 @@
+package com.pos.infrastructure.adapter.out.persistence;
+
+import com.pos.domain.model.*;
+import com.pos.domain.port.out.VentaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public class VentaJpaAdapter implements VentaRepository {
+
+    private final VentaJpaRepository jpaRepository;
+    private final VentaEntityMapper mapper;
+
+    public VentaJpaAdapter(VentaJpaRepository jpaRepository) {
+        this.jpaRepository = jpaRepository;
+        this.mapper = new VentaEntityMapper();
+    }
+
+    @Override
+    public Venta save(Venta venta) {
+        VentaEntity saved = jpaRepository.save(mapper.toEntity(venta));
+        return mapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<Venta> findById(String ventaId) {
+        return jpaRepository.findById(ventaId).map(mapper::toDomain);
+    }
+
+    @Override
+    public Optional<Venta> findByIdempotencyKey(String key) {
+        return jpaRepository.findByIdempotencyKey(key).map(mapper::toDomain);
+    }
+
+    @Override
+    public PageResponse<ResumenVentaSimple> findAll(int page, int size) {
+        Page<VentaEntity> pageResult = jpaRepository.findAllByOrderByFechaHoraDesc(
+                PageRequest.of(page, size));
+        List<ResumenVentaSimple> items = pageResult.getContent()
+                .stream().map(mapper::toResumenSimple).toList();
+        return PageResponse.of(items, pageResult.getTotalElements(), page, size);
+    }
+
+    @Override
+    public ReporteCierre generarReporte(String fechaDesde, String fechaHasta) {
+        int totalVentas = jpaRepository.countVentasEnRango(fechaDesde, fechaHasta);
+        Long montoTotalRaw = jpaRepository.sumTotalEnRango(fechaDesde, fechaHasta);
+        int totalDevueltas = jpaRepository.countDevueltasEnRango(fechaDesde, fechaHasta);
+        Long montoDevueltoRaw = jpaRepository.sumDevueltasEnRango(fechaDesde, fechaHasta);
+
+        Dinero montoTotal = Dinero.dePesos(montoTotalRaw != null ? montoTotalRaw : 0);
+        Dinero montoDevuelto = Dinero.dePesos(montoDevueltoRaw != null ? montoDevueltoRaw : 0);
+        Dinero montoNeto = montoTotal.menos(montoDevuelto);
+
+        return new ReporteCierre(
+                fechaDesde,
+                fechaHasta,
+                totalVentas,
+                totalDevueltas,
+                montoTotal,
+                montoDevuelto,
+                montoNeto,
+                List.of()
+        );
+    }
+}
