@@ -31,7 +31,9 @@ public class ProductoController {
             @RequestParam(defaultValue = "-1") int size) {
 
         if (size > 100) {
-            throw new com.pos.domain.exception.QueryDemasiadoCortaException("size > 100");
+            // Retorna 400 VALIDACION_FALLIDA según SPEC-BE-001b
+            throw new jakarta.validation.ConstraintViolationException(
+                    "size: debe ser menor o igual a 100", java.util.Set.of());
         }
 
         if (size <= 0) {

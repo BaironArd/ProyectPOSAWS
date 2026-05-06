@@ -5,7 +5,6 @@ import com.pos.domain.port.out.TokenRepository;
 import com.pos.domain.port.out.UsuarioRepository;
 import com.pos.domain.port.out.VentaRepository;
 import com.pos.domain.service.*;
-// InventarioService, ListarVentasService, ReporteService, DevolucionService, AuthService all in domain.service
 import com.pos.infrastructure.security.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

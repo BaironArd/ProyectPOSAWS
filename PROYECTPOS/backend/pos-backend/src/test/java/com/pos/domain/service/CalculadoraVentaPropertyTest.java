@@ -9,6 +9,8 @@ import net.jqwik.api.constraints.LongRange;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Property-Based Tests para CalculadoraVenta usando jqwik.
  * Verifica invariantes matemáticas para cualquier entrada válida.
@@ -23,7 +25,7 @@ class CalculadoraVentaPropertyTest {
             @ForAll @IntRange(min = 1, max = 100) int cantidad) {
 
         ItemVenta item = new ItemVenta(1L, "P", cantidad, Dinero.dePesos(precio));
-        ResumenVenta r = calculadora.calcular(List.of(item), Dinero.dePesos(Long.MAX_VALUE));
+        ResumenVenta r = calculadora.calcular(List.of(item), Dinero.dePesos(Long.MAX_VALUE / 2));
 
         long ivaEsperado = Math.round(r.subtotal().toPesos() * 0.19);
         assertThat(r.iva().toPesos()).isEqualTo(ivaEsperado);
@@ -35,7 +37,7 @@ class CalculadoraVentaPropertyTest {
             @ForAll @IntRange(min = 1, max = 100) int cantidad) {
 
         ItemVenta item = new ItemVenta(1L, "P", cantidad, Dinero.dePesos(precio));
-        ResumenVenta r = calculadora.calcular(List.of(item), Dinero.dePesos(Long.MAX_VALUE));
+        ResumenVenta r = calculadora.calcular(List.of(item), Dinero.dePesos(Long.MAX_VALUE / 2));
 
         assertThat(r.total().toPesos()).isEqualTo(r.subtotal().toPesos() + r.iva().toPesos());
     }
@@ -49,14 +51,5 @@ class CalculadoraVentaPropertyTest {
         ResumenVenta r = calculadora.calcular(List.of(item), Dinero.dePesos(montoPagado));
 
         assertThat(r.cambio().toPesos()).isEqualTo(montoPagado - r.total().toPesos());
-    }
-
-    private void assertThat(long actual) {
-        org.assertj.core.api.Assertions.assertThat(actual);
-    }
-
-    // Helper para usar assertj dentro de jqwik
-    private static org.assertj.core.api.AbstractLongAssert<?> assertThat(long val) {
-        return org.assertj.core.api.Assertions.assertThat(val);
     }
 }
