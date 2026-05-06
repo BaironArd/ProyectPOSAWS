@@ -7,6 +7,7 @@ import com.pos.infrastructure.adapter.in.web.dto.ProductoResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +22,7 @@ public class AdminProductoController {
 
     private final GestionarProductoUseCase gestionarProducto;
 
-    public AdminProductoController(GestionarProductoUseCase gestionarProducto) {
+    public AdminProductoController(@Qualifier("inventarioService") GestionarProductoUseCase gestionarProducto) {
         this.gestionarProducto = gestionarProducto;
     }
 

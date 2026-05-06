@@ -6,8 +6,10 @@ import com.pos.domain.port.out.UsuarioRepository;
 import com.pos.domain.port.out.VentaRepository;
 import com.pos.domain.service.*;
 import com.pos.infrastructure.security.JwtService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * Punto de ensamblaje de la arquitectura hexagonal.
@@ -23,6 +25,7 @@ public class BeanConfig {
     }
 
     @Bean
+    @Primary
     public ProductoService productoService(ProductoRepository productoRepository) {
         return new ProductoService(productoRepository);
     }
@@ -47,6 +50,7 @@ public class BeanConfig {
     }
 
     @Bean
+    @Qualifier("inventarioService")
     public InventarioService inventarioService(ProductoRepository productoRepository) {
         return new InventarioService(productoRepository);
     }
