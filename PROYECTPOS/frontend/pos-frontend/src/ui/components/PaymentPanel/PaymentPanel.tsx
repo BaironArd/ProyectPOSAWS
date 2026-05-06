@@ -44,11 +44,14 @@ export function PaymentPanel({ ventaPort }: Props) {
   const esMixto = metodoPago === 'MIXTO';
   const esEfectivo = metodoPago === 'EFECTIVO';
   const sumaPagos = pagos.reduce((s, p) => s + p.monto, 0);
+  const tieneEfectivoEnMixto = esMixto && pagos.some(p => p.metodo === 'EFECTIVO');
   const montoInsuficiente = esEfectivo
     ? montoPagado < resumen.total
     : esMixto
     ? sumaPagos < resumen.total
     : montoPagado < resumen.total;
+  // Cambio en MIXTO: solo si hay efectivo y la suma supera el total
+  const cambioMixto = esMixto && sumaPagos > resumen.total ? sumaPagos - resumen.total : 0;
 
   return (
     <div className={styles.wrapper}>
@@ -151,6 +154,8 @@ export function PaymentPanel({ ventaPort }: Props) {
           <p className={`${styles.cambio} ${montoInsuficiente ? styles.insuficiente : styles.suficiente}`}>
             {montoInsuficiente
               ? `Faltan ${formatearPrecio(resumen.total - sumaPagos)}`
+              : tieneEfectivoEnMixto && cambioMixto > 0
+              ? `Cubierto ✓ — Cambio: ${formatearPrecio(cambioMixto)}`
               : `Cubierto ✓`}
           </p>
         </div>

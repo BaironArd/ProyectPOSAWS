@@ -52,8 +52,27 @@ public class VentaController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         var resultado = listarVentas.listar(page, size);
-        return ResponseEntity.ok(ApiResponse.of(resultado));
+        // Mapear a DTO con total como long (no como objeto Dinero)
+        var items = resultado.items().stream()
+                .map(r -> new VentaResumenResponse(
+                        r.ventaId(),
+                        r.fechaHora().toString(),
+                        r.total().toPesos(),
+                        r.cantidadItems(),
+                        r.estado().name()))
+                .toList();
+        var pageDto = new com.pos.domain.model.PageResponse<>(
+                items, resultado.total(), resultado.page(), resultado.size(), resultado.totalPages());
+        return ResponseEntity.ok(ApiResponse.of(pageDto));
     }
+
+    public record VentaResumenResponse(
+            String ventaId,
+            String fechaHora,
+            long total,
+            int cantidadItems,
+            String estado
+    ) {}
 
     @PostMapping("/{ventaId}/devolucion")
     @Transactional

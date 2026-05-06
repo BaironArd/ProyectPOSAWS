@@ -69,3 +69,21 @@
 }
 
 .btnDevolver:hover { background: #fde68a; }
+
+.btnFactura {
+  padding: 0.25rem 0.6rem;
+  background: #eff6ff;
+  border: 1px solid #93c5fd;
+  border-radius: 4px;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.btnFactura:hover { background: #dbeafe; }
+
+.sinFactura {
+  color: #d1d5db;
+  font-size: 0.875rem;
+}

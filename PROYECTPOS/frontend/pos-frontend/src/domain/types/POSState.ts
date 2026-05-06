@@ -121,4 +121,6 @@ export interface POSState {
   error: ErrorUI | null;
   ventaIdActual: string | null;
   datosRecibo: DatosRecibo | null;
+  /** Mapa de ventaId → DatosRecibo para ver facturas desde el historial */
+  recibosGuardados: Record<string, DatosRecibo>;
 }

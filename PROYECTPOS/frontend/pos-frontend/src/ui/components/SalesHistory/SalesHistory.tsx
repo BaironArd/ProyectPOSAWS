@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import { useHistory } from '@application/hooks/useHistory';
 import type { IVentaHistorialPort } from '@domain/ports/IVentaHistorialPort';
+import type { DatosRecibo } from '@domain/types/POSState';
 import { formatearPrecio, formatearFecha } from '@ui/utils/formato';
+import { ReceiptViewer } from '../ReceiptViewer/ReceiptViewer';
 import styles from './SalesHistory.module.css';
 
 interface Props {
@@ -12,7 +15,10 @@ interface Props {
 export function SalesHistory({ historialPort, onDevolver }: Props) {
   const estado = usePOSStore((s) => s.estado);
   const historial = usePOSStore((s) => s.historial);
+  const recibosGuardados = usePOSStore((s) => s.recibosGuardados);
   const volverDeHistorial = usePOSStore((s) => s.volverDeHistorial);
+
+  const [reciboViendo, setReciboViendo] = useState<DatosRecibo | null>(null);
 
   useHistory(historialPort);
 
@@ -37,30 +43,54 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
               <th>Fecha / Hora</th>
               <th>Total</th>
               <th>Ítems</th>
-              {onDevolver && <th>Acción</th>}
+              <th>Factura</th>
+              {onDevolver && <th>Devolución</th>}
             </tr>
           </thead>
           <tbody>
-            {historial.map((venta) => (
-              <tr key={venta.ventaId}>
-                <td>{venta.ventaId}</td>
-                <td>{formatearFecha(venta.fechaHora)}</td>
-                <td>{formatearPrecio(venta.total)}</td>
-                <td>{venta.cantidadItems}</td>
-                {onDevolver && (
+            {historial.map((venta) => {
+              const recibo = recibosGuardados[venta.ventaId];
+              return (
+                <tr key={venta.ventaId}>
+                  <td>{venta.ventaId}</td>
+                  <td>{formatearFecha(venta.fechaHora)}</td>
+                  <td>{formatearPrecio(venta.total)}</td>
+                  <td>{venta.cantidadItems}</td>
                   <td>
-                    <button
-                      className={styles.btnDevolver}
-                      onClick={() => onDevolver(venta.ventaId)}
-                    >
-                      Devolver
-                    </button>
+                    {recibo ? (
+                      <button
+                        className={styles.btnFactura}
+                        onClick={() => setReciboViendo(recibo)}
+                      >
+                        🧾 Ver
+                      </button>
+                    ) : (
+                      <span className={styles.sinFactura}>—</span>
+                    )}
                   </td>
-                )}
-              </tr>
-            ))}
+                  {onDevolver && (
+                    <td>
+                      <button
+                        className={styles.btnDevolver}
+                        onClick={() => onDevolver(venta.ventaId)}
+                      >
+                        Devolver
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      )}
+
+      {/* Modal de factura */}
+      {reciboViendo && (
+        <ReceiptViewer
+          datos={reciboViendo}
+          onCerrar={() => setReciboViendo(null)}
+        />
       )}
     </div>
   );

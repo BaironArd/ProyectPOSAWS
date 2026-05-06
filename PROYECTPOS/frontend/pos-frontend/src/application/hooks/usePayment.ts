@@ -24,6 +24,7 @@ export function usePayment(ventaPort: IVentaPort) {
   const setError = usePOSStore((s) => s.setError);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
   const setDatosRecibo = usePOSStore((s) => s.setDatosRecibo);
+  const guardarRecibo = usePOSStore((s) => s.guardarRecibo);
   const resetVenta = usePOSStore((s) => s.resetVenta);
 
   async function confirmarVenta() {
@@ -45,8 +46,18 @@ export function usePayment(ventaPort: IVentaPort) {
 
       if (result.ok) {
         setVentaIdActual(result.ventaId);
-        // Guardar datos del recibo ANTES de que el carrito se limpie
-        setDatosRecibo({
+        // Calcular cambio correcto para MIXTO con efectivo
+        const componenteEfectivo = metodoPago === 'MIXTO'
+          ? pagos.filter(p => p.metodo === 'EFECTIVO').reduce((s, p) => s + p.monto, 0)
+          : metodoPago === 'EFECTIVO' ? montoPagado : 0;
+        const sumaTotalPagada = metodoPago === 'MIXTO'
+          ? pagos.reduce((s, p) => s + p.monto, 0)
+          : montoPagado;
+        const cambioCalculado = sumaTotalPagada > resumen.total
+          ? sumaTotalPagada - resumen.total
+          : 0;
+
+        const recibo: import('@domain/types/POSState').DatosRecibo = {
           ventaId: result.ventaId,
           fechaHora: new Date().toISOString(),
           cajero: sesion?.usuario ?? '',
@@ -59,9 +70,12 @@ export function usePayment(ventaPort: IVentaPort) {
           iva: resumen.iva,
           total: resumen.total,
           metodoPago: metodoPago ?? 'EFECTIVO',
-          montoPagado,
-          cambio: resumen.total > montoPagado ? 0 : montoPagado - resumen.total,
-        });
+          montoPagado: sumaTotalPagada,
+          cambio: cambioCalculado,
+        };
+
+        setDatosRecibo(recibo);
+        guardarRecibo(recibo); // guardar para verlo desde el historial
         setEstado('VENTA_COMPLETA');
       } else {
         throw new Error('CONFIRMACION_FALLIDA');

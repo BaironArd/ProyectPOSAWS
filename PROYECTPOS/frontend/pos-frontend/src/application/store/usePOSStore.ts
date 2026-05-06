@@ -55,6 +55,7 @@ const estadoInicial: POSState = {
   error: null,
   ventaIdActual: null,
   datosRecibo: null,
+  recibosGuardados: {},
 };
 
 // ---------------------------------------------------------------------------
@@ -84,6 +85,7 @@ interface POSActions {
   // Venta
   setVentaIdActual: (ventaId: string) => void;
   setDatosRecibo: (datos: DatosRecibo) => void;
+  guardarRecibo: (datos: DatosRecibo) => void;
   resetVenta: () => void;
 
   // Historial
@@ -217,6 +219,11 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
   setVentaIdActual: (ventaId) => set({ ventaIdActual: ventaId }),
 
   setDatosRecibo: (datos) => set({ datosRecibo: datos }),
+
+  guardarRecibo: (datos) => {
+    const { recibosGuardados } = get();
+    set({ recibosGuardados: { ...recibosGuardados, [datos.ventaId]: datos } });
+  },
 
   resetVenta: () =>
     set({
