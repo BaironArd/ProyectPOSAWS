@@ -56,14 +56,41 @@ public class ProductoJpaAdapter implements ProductoRepository {
 
     @Override
     public Producto save(Producto producto) {
-        ProductoEntity saved = jpaRepository.save(mapper.toEntity(producto));
+        ProductoEntity entity;
+        if (producto.getId() != null) {
+            // Actualización: cargar la entidad existente para preservar @Version
+            entity = jpaRepository.findById(producto.getId())
+                    .orElse(new ProductoEntity());
+        } else {
+            entity = new ProductoEntity();
+        }
+        // Actualizar campos sin tocar el campo version (lo gestiona JPA)
+        entity.setNombre(producto.getNombre());
+        entity.setPrecio(producto.getPrecio().toPesos());
+        entity.setStock(producto.getStock());
+        entity.setCategoria(producto.getCategoria());
+        entity.setActivo(producto.isActivo());
+
+        ProductoEntity saved = jpaRepository.save(entity);
         return mapper.toDomain(saved);
     }
 
     @Override
     public void saveAll(List<Producto> productos) {
         try {
-            jpaRepository.saveAll(productos.stream().map(mapper::toEntity).toList());
+            // Para saveAll también preservamos la versión cargando las entidades existentes
+            List<ProductoEntity> entities = productos.stream().map(p -> {
+                ProductoEntity entity = p.getId() != null
+                        ? jpaRepository.findById(p.getId()).orElse(new ProductoEntity())
+                        : new ProductoEntity();
+                entity.setNombre(p.getNombre());
+                entity.setPrecio(p.getPrecio().toPesos());
+                entity.setStock(p.getStock());
+                entity.setCategoria(p.getCategoria());
+                entity.setActivo(p.isActivo());
+                return entity;
+            }).toList();
+            jpaRepository.saveAll(entities);
         } catch (OptimisticLockException e) {
             throw new ConflictoStockException();
         }
