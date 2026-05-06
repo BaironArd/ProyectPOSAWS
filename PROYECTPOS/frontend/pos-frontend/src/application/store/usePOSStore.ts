@@ -76,6 +76,7 @@ interface POSActions {
   setMetodoPago: (metodo: MetodoPago) => void;
   agregarPago: (pago: PagoItem) => void;
   eliminarPago: (index: number) => void;
+  actualizarPago: (index: number, pago: PagoItem) => void;
   resetPagos: () => void;
 
   // Venta
@@ -193,6 +194,11 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
   eliminarPago: (index) => {
     const { pagos } = get();
     set({ pagos: pagos.filter((_, i) => i !== index) });
+  },
+
+  actualizarPago: (index, pago) => {
+    const { pagos } = get();
+    set({ pagos: pagos.map((p, i) => (i === index ? pago : p)) });
   },
 
   resetPagos: () => set({ pagos: [], metodoPago: null, montoPagado: 0, cambio: 0 }),

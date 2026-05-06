@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import { usePayment } from '@application/hooks/usePayment';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
-import type { MetodoPago, PagoItem } from '@domain/types/POSState';
+import type { MetodoPago } from '@domain/types/POSState';
 import { formatearPrecio } from '@ui/utils/formato';
 import styles from './PaymentPanel.module.css';
 
@@ -30,6 +30,7 @@ export function PaymentPanel({ ventaPort }: Props) {
   const eliminarPago = usePOSStore((s) => s.eliminarPago);
 
   const { confirmarVenta, procesando, puedeConfirmar } = usePayment(ventaPort);
+  const actualizarPago = usePOSStore((s) => s.actualizarPago);
 
   // Seleccionar EFECTIVO por defecto al abrir el panel
   useEffect(() => {
@@ -111,9 +112,7 @@ export function PaymentPanel({ ventaPort }: Props) {
               <select
                 value={pago.metodo}
                 onChange={(e) => {
-                  const nuevos = [...pagos];
-                  nuevos[idx] = { ...pago, metodo: e.target.value as PagoItem['metodo'] };
-                  // reemplazar via eliminar + agregar no es ideal; usamos store directamente
+                  actualizarPago(idx, { ...pago, metodo: e.target.value as Exclude<MetodoPago, 'MIXTO'> });
                 }}
                 className={styles.selectMetodo}
                 disabled={procesando}
@@ -128,9 +127,7 @@ export function PaymentPanel({ ventaPort }: Props) {
                 value={pago.monto || ''}
                 onChange={(e) => {
                   const val = parseFloat(e.target.value);
-                  const nuevos = [...pagos];
-                  nuevos[idx] = { ...pago, monto: isNaN(val) ? 0 : val };
-                  // actualizar via store
+                  actualizarPago(idx, { ...pago, monto: isNaN(val) || val < 0 ? 0 : val });
                 }}
                 className={styles.inputMixto}
                 placeholder="0"
