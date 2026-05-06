@@ -1,0 +1,104 @@
+.app {
+  min-height: 100vh;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding: 1.25rem 1.5rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.flujoVenta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .flujoVenta { grid-template-columns: 1fr; }
+}
+
+.columnaIzq, .columnaDer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ventaCompleta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2rem 0;
+}
+
+.exito {
+  background: #fff;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 420px;
+  width: 100%;
+}
+
+.exitoIcono { font-size: 2.5rem; }
+
+.exito h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #166534;
+  margin: 0.5rem 0 0.25rem;
+}
+
+.cambioTexto {
+  font-size: 1.1rem;
+  color: #374151;
+  margin: 0.25rem 0;
+}
+
+.ventaId {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 0.25rem 0 0;
+}
+
+.accionesVenta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btnNuevaVenta {
+  padding: 0.65rem 1.5rem;
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btnNuevaVenta:hover { background: #4338ca; }
+
+.btnDevolver {
+  padding: 0.65rem 1.5rem;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnDevolver:hover { background: #fde68a; }

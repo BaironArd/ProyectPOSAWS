@@ -1,0 +1,17 @@
+.btn {
+  padding: 0.6rem 1.25rem;
+  background: #374151;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn:hover { background: #1f2937; }
+
+@media print {
+  .btn { display: none; }
+}
