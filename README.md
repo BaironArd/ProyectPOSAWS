@@ -200,20 +200,24 @@ infrastructure/adapter/out/       ← JPA Adapters
 
 ### Frontend
 
-```bash
-cd PROYECTPOS/frontend/pos-frontend
+```powershell
+cd PROYECTPOS\frontend\pos-frontend
 npm install
 npm run dev
 ```
+
+Espera hasta ver: `Local: http://localhost:5173/`
 
 La aplicación estará disponible en `http://localhost:5173`
 
 ### Backend
 
-```bash
-cd PROYECTPOS/backend/pos-backend
-mvn spring-boot:run
+```powershell
+cd PROYECTPOS\backend\pos-backend
+.\mvnw.cmd spring-boot:run
 ```
+
+Espera hasta ver: `Started PosBackendApplication in X seconds`
 
 La API estará disponible en `http://localhost:8080`
 
