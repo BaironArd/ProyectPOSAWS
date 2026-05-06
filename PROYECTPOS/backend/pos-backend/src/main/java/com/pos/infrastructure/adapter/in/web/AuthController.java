@@ -1,8 +1,7 @@
 package com.pos.infrastructure.adapter.in.web;
 
 import com.pos.domain.model.SesionToken;
-import com.pos.domain.port.in.LoginUseCase;
-import com.pos.domain.port.in.LogoutUseCase;
+import com.pos.domain.service.AuthService;
 import com.pos.infrastructure.adapter.in.web.dto.ApiResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -13,18 +12,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
-    private final LoginUseCase loginUseCase;
-    private final LogoutUseCase logoutUseCase;
+    private final AuthService authService;
 
-    public AuthController(LoginUseCase loginUseCase, LogoutUseCase logoutUseCase) {
-        this.loginUseCase = loginUseCase;
-        this.logoutUseCase = logoutUseCase;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<SesionTokenResponse>> login(
             @RequestBody @Valid LoginRequest request) {
-        SesionToken token = loginUseCase.login(request.usuario(), request.contrasena());
+        SesionToken token = authService.login(request.usuario(), request.contrasena());
         return ResponseEntity.ok(ApiResponse.of(new SesionTokenResponse(
                 token.token(), token.usuario(), token.rol().name(), token.expiresIn())));
     }
@@ -33,7 +30,7 @@ public class AuthController {
     public ResponseEntity<Void> logout(
             @RequestHeader("Authorization") String authHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            logoutUseCase.logout(authHeader.substring(7));
+            authService.logout(authHeader.substring(7));
         }
         return ResponseEntity.noContent().build();
     }

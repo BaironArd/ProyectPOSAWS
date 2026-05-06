@@ -17,12 +17,8 @@ INSERT INTO productos (nombre, precio, stock, categoria, activo, version) VALUES
 ('Laptop Stand', 45000, 6, 'Accesorios', true, 0),
 ('Cargador USB-C 65W', 38000, 14, 'Cargadores', true, 0);
 
--- Usuarios de prueba (passwords hasheados con BCrypt)
--- cajero01 / 1234
--- cajero02 / 1234
--- admin01  / admin123
--- NOTA: Para regenerar los hashes ejecutar GenerarHashesTest.java
-INSERT INTO usuarios (usuario, password_hash, rol, activo) VALUES
-('cajero01', '$2a$10$EblZqNptyYvcLm/VwDpteuS7o/GBqrOkkxbvmq4hnAprkBGkhs5.G', 'CAJERO', true),
-('cajero02', '$2a$10$EblZqNptyYvcLm/VwDpteuS7o/GBqrOkkxbvmq4hnAprkBGkhs5.G', 'CAJERO', true),
-('admin01',  '$2a$10$lDkDPCnMX5b5GNTpnpFQueOuNSMqnGnTmZ9bxnre/xRc0LGb2IQHK', 'ADMIN', true);
+-- Usuarios de prueba: se crean automáticamente al arrancar via DataInitializer.java
+-- con hashes BCrypt correctos generados por Spring Security.
+-- cajero01 / 1234  (rol: CAJERO)
+-- cajero02 / 1234  (rol: CAJERO)
+-- admin01  / admin123 (rol: ADMIN)

@@ -1,20 +1,19 @@
 package com.pos.infrastructure.config;
 
-import com.pos.domain.port.out.ProductoRepository;
-import com.pos.domain.port.out.TokenRepository;
-import com.pos.domain.port.out.UsuarioRepository;
-import com.pos.domain.port.out.VentaRepository;
+import com.pos.domain.port.in.*;
+import com.pos.domain.port.out.*;
 import com.pos.domain.service.*;
 import com.pos.infrastructure.security.JwtService;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 /**
  * Punto de ensamblaje de la arquitectura hexagonal.
- * Es la única clase que conoce tanto las interfaces del dominio
- * como las implementaciones concretas de infraestructura.
+ *
+ * Estrategia: cada servicio de dominio se registra UNA SOLA VEZ con el tipo
+ * concreto. Los controllers inyectan las interfaces — Spring resuelve
+ * automáticamente porque cada interfaz tiene exactamente una implementación
+ * en el contexto.
  */
 @Configuration
 public class BeanConfig {
@@ -24,12 +23,26 @@ public class BeanConfig {
         return new CalculadoraVenta();
     }
 
+    /**
+     * ProductoService implementa BuscarProductosUseCase + ObtenerProductoUseCase.
+     * Al registrarlo como ProductoService, Spring lo usa para ambas interfaces.
+     */
     @Bean
-    @Primary
     public ProductoService productoService(ProductoRepository productoRepository) {
         return new ProductoService(productoRepository);
     }
 
+    /**
+     * InventarioService implementa GestionarProductoUseCase (solo ADMIN).
+     */
+    @Bean
+    public InventarioService inventarioService(ProductoRepository productoRepository) {
+        return new InventarioService(productoRepository);
+    }
+
+    /**
+     * VentaService implementa ConfirmarVentaUseCase + ObtenerVentaUseCase.
+     */
     @Bean
     public VentaService ventaService(ProductoRepository productoRepository,
                                      VentaRepository ventaRepository,
@@ -42,17 +55,14 @@ public class BeanConfig {
         return new ListarVentasService(ventaRepository);
     }
 
+    /**
+     * AuthService implementa LoginUseCase + LogoutUseCase.
+     */
     @Bean
     public AuthService authService(UsuarioRepository usuarioRepository,
                                    TokenRepository tokenRepository,
                                    JwtService jwtService) {
         return new AuthService(usuarioRepository, tokenRepository, jwtService);
-    }
-
-    @Bean
-    @Qualifier("inventarioService")
-    public InventarioService inventarioService(ProductoRepository productoRepository) {
-        return new InventarioService(productoRepository);
     }
 
     @Bean
