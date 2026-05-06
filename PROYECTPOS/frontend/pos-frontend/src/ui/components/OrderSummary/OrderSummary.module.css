@@ -1,0 +1,27 @@
+.wrapper {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+  user-select: none;
+}
+
+.fila {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #374151;
+  padding: 0.25rem 0;
+}
+
+.divisor {
+  border-top: 1px solid #d1d5db;
+  margin: 0.5rem 0;
+}
+
+.total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
