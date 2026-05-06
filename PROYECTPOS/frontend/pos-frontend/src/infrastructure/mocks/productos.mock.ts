@@ -14,10 +14,11 @@ const PRODUCTOS_MOCK: Producto[] = [
 
 export class ProductoMock implements IProductoPort {
   async buscar(query: string): Promise<Producto[]> {
-    await new Promise((r) => setTimeout(r, 300)); // simular latencia
+    await new Promise((r) => setTimeout(r, 300));
     const q = query.toLowerCase();
+    // SPEC-BE-001: solo productos activos Y con stock > 0 aparecen en búsqueda del cajero
     return PRODUCTOS_MOCK.filter(
-      (p) => p.activo && p.nombre.toLowerCase().includes(q)
+      (p) => p.activo && p.stock > 0 && p.nombre.toLowerCase().includes(q)
     );
   }
 }

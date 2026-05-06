@@ -91,6 +91,19 @@ export interface ReporteCierre {
   ventasPorCajero: VentasPorCajero[];
 }
 
+export interface DatosRecibo {
+  ventaId: string;
+  fechaHora: string;
+  cajero: string;
+  items: Array<{ nombre: string; cantidad: number; subtotal: number }>;
+  subtotal: number;
+  iva: number;
+  total: number;
+  metodoPago: string;
+  montoPagado: number;
+  cambio: number;
+}
+
 export interface POSState {
   estado: EstadoUI;
   sesion: Sesion | null;
@@ -106,4 +119,5 @@ export interface POSState {
   estadoPrevio: EstadoUI | null;
   error: ErrorUI | null;
   ventaIdActual: string | null;
+  datosRecibo: DatosRecibo | null;
 }

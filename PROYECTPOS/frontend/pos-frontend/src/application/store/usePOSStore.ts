@@ -9,6 +9,7 @@ import type {
   ErrorUI,
   ResumenVentaHistorial,
   Producto,
+  DatosRecibo,
 } from '@domain/types/POSState';
 import { calcularResumen, calcularCambio, calcularSubtotal } from '@domain/calculadora';
 
@@ -53,6 +54,7 @@ const estadoInicial: POSState = {
   estadoPrevio: null,
   error: null,
   ventaIdActual: null,
+  datosRecibo: null,
 };
 
 // ---------------------------------------------------------------------------
@@ -81,6 +83,7 @@ interface POSActions {
 
   // Venta
   setVentaIdActual: (ventaId: string) => void;
+  setDatosRecibo: (datos: DatosRecibo) => void;
   resetVenta: () => void;
 
   // Historial
@@ -205,6 +208,8 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
 
   // --- Venta ---
   setVentaIdActual: (ventaId) => set({ ventaIdActual: ventaId }),
+
+  setDatosRecibo: (datos) => set({ datosRecibo: datos }),
 
   resetVenta: () =>
     set({

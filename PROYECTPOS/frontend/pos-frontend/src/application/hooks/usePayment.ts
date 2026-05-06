@@ -23,6 +23,7 @@ export function usePayment(ventaPort: IVentaPort) {
   const setEstado = usePOSStore((s) => s.setEstado);
   const setError = usePOSStore((s) => s.setError);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
+  const setDatosRecibo = usePOSStore((s) => s.setDatosRecibo);
   const resetVenta = usePOSStore((s) => s.resetVenta);
 
   async function confirmarVenta() {
@@ -44,6 +45,23 @@ export function usePayment(ventaPort: IVentaPort) {
 
       if (result.ok) {
         setVentaIdActual(result.ventaId);
+        // Guardar datos del recibo ANTES de que el carrito se limpie
+        setDatosRecibo({
+          ventaId: result.ventaId,
+          fechaHora: new Date().toISOString(),
+          cajero: sesion?.usuario ?? '',
+          items: carrito.map(i => ({
+            nombre: i.nombre,
+            cantidad: i.cantidad,
+            subtotal: i.subtotal,
+          })),
+          subtotal: resumen.subtotal,
+          iva: resumen.iva,
+          total: resumen.total,
+          metodoPago: metodoPago ?? 'EFECTIVO',
+          montoPagado,
+          cambio: resumen.total > montoPagado ? 0 : montoPagado - resumen.total,
+        });
         setEstado('VENTA_COMPLETA');
       } else {
         throw new Error('CONFIRMACION_FALLIDA');

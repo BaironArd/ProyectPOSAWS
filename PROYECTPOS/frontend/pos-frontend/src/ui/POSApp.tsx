@@ -53,6 +53,7 @@ export function POSApp({
   const sesion = usePOSStore((s) => s.sesion);
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
   const cambio = usePOSStore((s) => s.cambio);
+  const datosRecibo = usePOSStore((s) => s.datosRecibo);
   const setEstado = usePOSStore((s) => s.setEstado);
   const resetVenta = usePOSStore((s) => s.resetVenta);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
@@ -111,13 +112,16 @@ export function POSApp({
                     style: 'currency',
                     currency: 'COP',
                     maximumFractionDigits: 0,
-                  }).format(cambio)}
+                  }).format(datosRecibo?.cambio ?? 0)}
                 </strong>
               </p>
               <p className={styles.ventaId}>ID: {ventaIdActual}</p>
             </div>
             <div className={styles.accionesVenta}>
-              <ReceiptButton impresionPort={impresionPort} />
+              <ReceiptButton
+                impresionPort={impresionPort}
+                datosVenta={datosRecibo ?? undefined}
+              />
               <button className={styles.btnDevolver} onClick={() => setEstado('DEVOLUCION')}>
                 Devolver venta
               </button>
