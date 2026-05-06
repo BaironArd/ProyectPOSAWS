@@ -47,10 +47,16 @@ public class VentaJpaAdapter implements VentaRepository {
 
     @Override
     public ReporteCierre generarReporte(String fechaDesde, String fechaHasta) {
-        int totalVentas = jpaRepository.countVentasEnRango(fechaDesde, fechaHasta);
-        Long montoTotalRaw = jpaRepository.sumTotalEnRango(fechaDesde, fechaHasta);
-        int totalDevueltas = jpaRepository.countDevueltasEnRango(fechaDesde, fechaHasta);
-        Long montoDevueltoRaw = jpaRepository.sumDevueltasEnRango(fechaDesde, fechaHasta);
+        // Convertir fechas String (yyyy-MM-dd) a Instant para queries compatibles con H2/PostgreSQL
+        java.time.Instant desde = java.time.LocalDate.parse(fechaDesde)
+                .atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        java.time.Instant hasta = java.time.LocalDate.parse(fechaHasta)
+                .plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+
+        int totalVentas = jpaRepository.countVentasEnRango(desde, hasta);
+        Long montoTotalRaw = jpaRepository.sumTotalEnRango(desde, hasta);
+        int totalDevueltas = jpaRepository.countDevueltasEnRango(desde, hasta);
+        Long montoDevueltoRaw = jpaRepository.sumDevueltasEnRango(desde, hasta);
 
         Dinero montoTotal = Dinero.dePesos(montoTotalRaw != null ? montoTotalRaw : 0);
         Dinero montoDevuelto = Dinero.dePesos(montoDevueltoRaw != null ? montoDevueltoRaw : 0);
