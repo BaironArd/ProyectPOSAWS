@@ -7,30 +7,29 @@ import { formatearPrecio } from '@ui/utils/formato';
 import styles from './PaymentPanel.module.css';
 
 const METODOS: { value: Exclude<MetodoPago, 'MIXTO'>; label: string }[] = [
-  { value: 'EFECTIVO', label: '💵 Efectivo' },
+  { value: 'EFECTIVO',       label: '💵 Efectivo' },
   { value: 'TARJETA_DEBITO', label: '💳 Débito' },
-  { value: 'TARJETA_CREDITO', label: '💳 Crédito' },
-  { value: 'TRANSFERENCIA', label: '🏦 Transferencia' },
+  { value: 'TARJETA_CREDITO',label: '💳 Crédito' },
+  { value: 'TRANSFERENCIA',  label: '🏦 Transferencia' },
 ];
 
-interface Props {
-  ventaPort: IVentaPort;
-}
+interface Props { ventaPort: IVentaPort; }
 
 export function PaymentPanel({ ventaPort }: Props) {
-  const estado = usePOSStore((s) => s.estado);
-  const resumen = usePOSStore((s) => s.resumen);
-  const metodoPago = usePOSStore((s) => s.metodoPago);
-  const pagos = usePOSStore((s) => s.pagos);
+  const estado      = usePOSStore((s) => s.estado);
+  const resumen     = usePOSStore((s) => s.resumen);
+  const metodoPago  = usePOSStore((s) => s.metodoPago);
+  const pagos       = usePOSStore((s) => s.pagos);
   const montoPagado = usePOSStore((s) => s.montoPagado);
-  const cambio = usePOSStore((s) => s.cambio);
-  const setMetodoPago = usePOSStore((s) => s.setMetodoPago);
+  const cambio      = usePOSStore((s) => s.cambio);
+
+  const setMetodoPago  = usePOSStore((s) => s.setMetodoPago);
   const setMontoPagado = usePOSStore((s) => s.setMontoPagado);
-  const agregarPago = usePOSStore((s) => s.agregarPago);
-  const eliminarPago = usePOSStore((s) => s.eliminarPago);
+  const agregarPago    = usePOSStore((s) => s.agregarPago);
+  const eliminarPago   = usePOSStore((s) => s.eliminarPago);
+  const actualizarPago = usePOSStore((s) => s.actualizarPago);
 
   const { confirmarVenta, procesando, puedeConfirmar } = usePayment(ventaPort);
-  const actualizarPago = usePOSStore((s) => s.actualizarPago);
 
   // Seleccionar EFECTIVO por defecto al abrir el panel
   useEffect(() => {
@@ -39,25 +38,34 @@ export function PaymentPanel({ ventaPort }: Props) {
     }
   }, [estado, metodoPago, setMetodoPago]);
 
+  // Para débito/crédito/transferencia: el monto pagado ES el total exacto
+  useEffect(() => {
+    if (
+      metodoPago &&
+      metodoPago !== 'EFECTIVO' &&
+      metodoPago !== 'MIXTO'
+    ) {
+      setMontoPagado(resumen.total);
+    }
+  }, [metodoPago, resumen.total, setMontoPagado]);
+
   if (estado !== 'CALCULANDO_PAGO' && estado !== 'PROCESANDO') return null;
 
-  const esMixto = metodoPago === 'MIXTO';
+  const esMixto    = metodoPago === 'MIXTO';
   const esEfectivo = metodoPago === 'EFECTIVO';
-  const sumaPagos = pagos.reduce((s, p) => s + p.monto, 0);
-  const tieneEfectivoEnMixto = esMixto && pagos.some(p => p.metodo === 'EFECTIVO');
-  const montoInsuficiente = esEfectivo
-    ? montoPagado < resumen.total
-    : esMixto
-    ? sumaPagos < resumen.total
-    : montoPagado < resumen.total;
-  // Cambio en MIXTO: solo si hay efectivo y la suma supera el total
-  const cambioMixto = esMixto && sumaPagos > resumen.total ? sumaPagos - resumen.total : 0;
+  const esExacto   = !esEfectivo && !esMixto && metodoPago !== null;
+
+  // MIXTO
+  const sumaPagos          = pagos.reduce((s, p) => s + p.monto, 0);
+  const mixtoInsuficiente  = esMixto && sumaPagos < resumen.total;
+  const cambioMixto        = esMixto && sumaPagos > resumen.total ? sumaPagos - resumen.total : 0;
+  const tieneEfectivoMixto = esMixto && pagos.some(p => p.metodo === 'EFECTIVO');
 
   return (
     <div className={styles.wrapper}>
       <h3 className={styles.titulo}>Método de pago</h3>
 
-      {/* Selector de método */}
+      {/* ── Selector de método ── */}
       <div className={styles.metodos}>
         {METODOS.map((m) => (
           <button
@@ -70,7 +78,7 @@ export function PaymentPanel({ ventaPort }: Props) {
           </button>
         ))}
         <button
-          className={`${styles.btnMetodo} ${metodoPago === 'MIXTO' ? styles.activo : ''}`}
+          className={`${styles.btnMetodo} ${esMixto ? styles.activo : ''}`}
           onClick={() => setMetodoPago('MIXTO')}
           disabled={procesando}
         >
@@ -78,12 +86,10 @@ export function PaymentPanel({ ventaPort }: Props) {
         </button>
       </div>
 
-      {/* Pago simple (efectivo / tarjeta / transferencia) */}
-      {!esMixto && metodoPago && (
+      {/* ── EFECTIVO: campo de monto + cambio ── */}
+      {esEfectivo && (
         <div className={styles.campoMonto}>
-          <label className={styles.label}>
-            {esEfectivo ? 'Monto recibido' : 'Monto'}
-          </label>
+          <label className={styles.label}>Monto recibido</label>
           <input
             type="number"
             min={0}
@@ -93,30 +99,41 @@ export function PaymentPanel({ ventaPort }: Props) {
               setMontoPagado(isNaN(val) || val < 0 ? 0 : val);
             }}
             className={styles.input}
-            placeholder="0"
+            placeholder={formatearPrecio(resumen.total)}
             disabled={procesando}
-            aria-label="Monto de pago"
+            autoFocus
           />
-          {esEfectivo && (
-            <p className={`${styles.cambio} ${montoInsuficiente ? styles.insuficiente : styles.suficiente}`}>
-              {montoInsuficiente
-                ? `Monto insuficiente (faltan ${formatearPrecio(resumen.total - montoPagado)})`
-                : `Cambio: ${formatearPrecio(cambio)}`}
-            </p>
-          )}
+          <p className={`${styles.cambio} ${montoPagado < resumen.total ? styles.insuficiente : styles.suficiente}`}>
+            {montoPagado < resumen.total
+              ? `Monto insuficiente — faltan ${formatearPrecio(resumen.total - montoPagado)}`
+              : `Cambio: ${formatearPrecio(cambio)}`}
+          </p>
         </div>
       )}
 
-      {/* Pago mixto */}
+      {/* ── DÉBITO / CRÉDITO / TRANSFERENCIA: cobro exacto, sin campo ── */}
+      {esExacto && (
+        <div className={styles.infoExacto}>
+          <p className={styles.labelExacto}>Total a cobrar</p>
+          <p className={styles.montoExacto}>{formatearPrecio(resumen.total)}</p>
+          <p className={styles.notaExacto}>
+            {metodoPago === 'TARJETA_DEBITO'   && 'El datáfono cargará el monto exacto a la tarjeta débito.'}
+            {metodoPago === 'TARJETA_CREDITO'  && 'El datáfono cargará el monto exacto a la tarjeta crédito.'}
+            {metodoPago === 'TRANSFERENCIA'    && 'El cliente transferirá el monto exacto.'}
+          </p>
+        </div>
+      )}
+
+      {/* ── MIXTO: filas de pago ── */}
       {esMixto && (
         <div className={styles.mixto}>
           {pagos.map((pago, idx) => (
             <div key={idx} className={styles.filaPago}>
               <select
                 value={pago.metodo}
-                onChange={(e) => {
-                  actualizarPago(idx, { ...pago, metodo: e.target.value as Exclude<MetodoPago, 'MIXTO'> });
-                }}
+                onChange={(e) =>
+                  actualizarPago(idx, { ...pago, metodo: e.target.value as Exclude<MetodoPago, 'MIXTO'> })
+                }
                 className={styles.selectMetodo}
                 disabled={procesando}
               >
@@ -144,6 +161,7 @@ export function PaymentPanel({ ventaPort }: Props) {
               >✕</button>
             </div>
           ))}
+
           <button
             className={styles.btnAgregarPago}
             onClick={() => agregarPago({ metodo: 'EFECTIVO', monto: 0 })}
@@ -151,11 +169,12 @@ export function PaymentPanel({ ventaPort }: Props) {
           >
             + Agregar pago
           </button>
-          <p className={`${styles.cambio} ${montoInsuficiente ? styles.insuficiente : styles.suficiente}`}>
-            {montoInsuficiente
+
+          <p className={`${styles.cambio} ${mixtoInsuficiente ? styles.insuficiente : styles.suficiente}`}>
+            {mixtoInsuficiente
               ? `Faltan ${formatearPrecio(resumen.total - sumaPagos)}`
-              : tieneEfectivoEnMixto && cambioMixto > 0
-              ? `Cubierto ✓ — Cambio: ${formatearPrecio(cambioMixto)}`
+              : tieneEfectivoMixto && cambioMixto > 0
+              ? `Cubierto ✓ — Cambio efectivo: ${formatearPrecio(cambioMixto)}`
               : `Cubierto ✓`}
           </p>
         </div>

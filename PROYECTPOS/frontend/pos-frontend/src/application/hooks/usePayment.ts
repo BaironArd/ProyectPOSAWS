@@ -47,12 +47,14 @@ export function usePayment(ventaPort: IVentaPort) {
       if (result.ok) {
         setVentaIdActual(result.ventaId);
         // Calcular cambio correcto para MIXTO con efectivo
-        const componenteEfectivo = metodoPago === 'MIXTO'
-          ? pagos.filter(p => p.metodo === 'EFECTIVO').reduce((s, p) => s + p.monto, 0)
-          : metodoPago === 'EFECTIVO' ? montoPagado : 0;
         const sumaTotalPagada = metodoPago === 'MIXTO'
           ? pagos.reduce((s, p) => s + p.monto, 0)
-          : montoPagado;
+          : resumen.total; // débito/crédito/transferencia: exacto
+        const montoEfectivoPagado = metodoPago === 'EFECTIVO'
+          ? montoPagado
+          : metodoPago === 'MIXTO'
+          ? pagos.filter(p => p.metodo === 'EFECTIVO').reduce((s, p) => s + p.monto, 0)
+          : 0;
         const cambioCalculado = sumaTotalPagada > resumen.total
           ? sumaTotalPagada - resumen.total
           : 0;
@@ -70,7 +72,7 @@ export function usePayment(ventaPort: IVentaPort) {
           iva: resumen.iva,
           total: resumen.total,
           metodoPago: metodoPago ?? 'EFECTIVO',
-          montoPagado: sumaTotalPagada,
+          montoPagado: metodoPago === 'EFECTIVO' ? montoPagado : sumaTotalPagada,
           cambio: cambioCalculado,
         };
 
@@ -99,7 +101,7 @@ export function usePayment(ventaPort: IVentaPort) {
       ? montoPagado >= resumen.total
       : metodoPago === 'MIXTO'
       ? pagos.reduce((s, p) => s + p.monto, 0) >= resumen.total
-      : montoPagado >= resumen.total);
+      : true); // débito, crédito, transferencia: siempre habilitado (cobro exacto)
 
   return { confirmarVenta, nuevaVenta, procesando, puedeConfirmar };
 }
