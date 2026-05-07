@@ -2,9 +2,6 @@
 
 Sistema completo de punto de venta (POS) con arquitectura hexagonal, desarrollado con **React 18 + TypeScript** en el frontend y **Java 21 + Spring Boot 3** en el backend.
 
-[![CI/CD Pipeline](https://github.com/your-repo/pos/actions/workflows/ci.yml/badge.svg)](https://github.com/your-repo/pos/actions/workflows/ci.yml)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=pos-backend&metric=coverage)](https://sonarcloud.io/dashboard?id=pos-backend)
-
 ---
 
 ## Tabla de contenidos
