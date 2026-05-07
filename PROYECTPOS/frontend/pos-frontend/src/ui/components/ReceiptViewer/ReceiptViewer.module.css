@@ -99,7 +99,11 @@
   margin: 4px 0 0;
 }
 
-/* Ocultar el modal al imprimir, mostrar solo el recibo */
+/* Ocultar todo el modal al imprimir, mostrar solo el recibo */
 @media print {
-  .overlay { display: none !important; }
+  .overlay {
+    display: none !important;
+  }
+  
+  /* El recibo se renderiza en ReceiptPortal, no aquí */
 }

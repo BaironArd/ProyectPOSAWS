@@ -8,16 +8,17 @@ body {
   color: #111827;
 }
 
-/* Estilos de impresión para recibo 80mm */
+/* ── Estilos de impresión para recibo 80mm ──
+   Usamos display:none en lugar de visibility:hidden para evitar
+   que el recibo quede en blanco cuando está dentro de contenedores ocultos.
+   El #receipt se renderiza en un portal directamente en el body.
+*/
 @media print {
-  body * { visibility: hidden; }
-  #receipt, #receipt * { visibility: visible; }
-  #receipt {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 80mm;
-    font-size: 11px;
-    font-family: monospace;
+  /* Ocultar toda la aplicación */
+  #root {
+    display: none !important;
   }
+
+  /* El recibo se muestra porque está en un portal directo al body,
+     fuera del #root. Sus estilos de impresión están en ReceiptPortal.module.css */
 }

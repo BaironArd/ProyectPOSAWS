@@ -25,6 +25,7 @@ import { RefundPanel } from './components/RefundPanel/RefundPanel';
 import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
 import { ReportsPanel } from './components/ReportsPanel/ReportsPanel';
 import { ReceiptButton } from './components/ReceiptButton/ReceiptButton';
+import { ReceiptPortal } from './components/ReceiptPortal/ReceiptPortal';
 
 import styles from './POSApp.module.css';
 
@@ -79,6 +80,9 @@ export function POSApp({
 
   return (
     <div className={styles.app}>
+      {/* Portal para impresión de recibo - se renderiza directo en el body */}
+      {datosRecibo && <ReceiptPortal datos={datosRecibo} />}
+      
       <Header authPort={authPort} />
 
       <main className={styles.main}>

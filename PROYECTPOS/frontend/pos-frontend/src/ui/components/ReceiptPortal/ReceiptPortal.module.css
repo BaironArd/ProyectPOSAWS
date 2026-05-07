@@ -1,71 +1,70 @@
-.btn {
-  padding: 0.6rem 1.25rem;
-  background: #374151;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.btn:hover { background: #1f2937; }
-
-/* Ocultar el botón al imprimir */
-@media print {
-  .btn {
-    display: none !important;
-  }
-}
-
+/* El recibo está oculto en pantalla — solo aparece al imprimir */
 .recibo {
   display: none;
 }
 
-.reciboContenido {
+/* Estilos del contenido del recibo */
+.contenido {
   width: 100%;
+  max-width: 80mm;
 }
 
-.reciboTitulo {
+.titulo {
   text-align: center;
   font-weight: bold;
   font-size: 13px;
   margin: 0 0 4px;
 }
 
-.reciboSeparador {
+.sep {
   border-top: 1px dashed #000;
   margin: 4px 0;
 }
 
-.reciboItem {
+.item {
   display: flex;
   justify-content: space-between;
   gap: 4px;
   margin: 2px 0;
 }
 
-.reciboItem span:first-child {
+.itemNombre {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.reciboFila {
+.fila {
   display: flex;
   justify-content: space-between;
   margin: 2px 0;
 }
 
-.reciboTotal {
+.total {
   font-weight: bold;
   font-size: 13px;
 }
 
-.reciboGracias {
+.gracias {
   text-align: center;
   margin: 4px 0 0;
   font-style: italic;
+}
+
+/* ── Estilos de impresión ── */
+@media print {
+  .recibo {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80mm;
+    max-width: 100%;
+    background: white;
+    color: black;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 4mm;
+  }
 }
