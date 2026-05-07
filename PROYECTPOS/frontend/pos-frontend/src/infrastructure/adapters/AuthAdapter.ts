@@ -6,9 +6,8 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export class AuthAdapter implements IAuthPort {
   async login(usuario: string, contrasena: string): Promise<Sesion> {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+    const res = await httpFetch(`${API_BASE}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ usuario, contrasena }),
     });
     if (!res.ok) throw new Error('CREDENCIALES_INVALIDAS');
