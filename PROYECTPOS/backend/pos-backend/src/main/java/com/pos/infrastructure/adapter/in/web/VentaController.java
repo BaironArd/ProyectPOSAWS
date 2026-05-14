@@ -1,6 +1,7 @@
 package com.pos.infrastructure.adapter.in.web;
 
 import com.pos.domain.model.Venta;
+import com.pos.domain.model.Devolucion;
 import com.pos.domain.port.in.*;
 import com.pos.infrastructure.adapter.in.web.dto.*;
 import jakarta.validation.Valid;
@@ -50,8 +51,10 @@ public class VentaController {
     @GetMapping
     public ResponseEntity<ApiResponse<?>> listar(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        var resultado = listarVentas.listar(page, size);
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String fechaDesde,
+            @RequestParam(required = false) String fechaHasta) {
+        var resultado = listarVentas.listar(page, size, fechaDesde, fechaHasta);
         // Mapear a DTO con total como long (no como objeto Dinero)
         var items = resultado.items().stream()
                 .map(r -> new VentaResumenResponse(
@@ -76,15 +79,30 @@ public class VentaController {
 
     @PostMapping("/{ventaId}/devolucion")
     @Transactional
-    public ResponseEntity<ApiResponse<DevolucionResponse>> devolver(@PathVariable String ventaId) {
-        var devolucion = devolverVenta.devolver(ventaId);
+    public ResponseEntity<ApiResponse<DevolucionResponse>> devolver(
+            @PathVariable String ventaId,
+            @RequestBody(required = false) DevolucionRequest request) {
+
+        Devolucion devolucion;
+        if (request != null && request.items() != null && !request.items().isEmpty()) {
+            List<DevolverVentaUseCase.ItemDevolucionCommand> cmds = request.items().stream()
+                    .map(i -> new DevolverVentaUseCase.ItemDevolucionCommand(i.productoId(), i.cantidad()))
+                    .toList();
+            devolucion = devolverVenta.devolverParcial(ventaId, cmds);
+        } else {
+            devolucion = devolverVenta.devolver(ventaId);
+        }
+
         return ResponseEntity.ok(ApiResponse.of(new DevolucionResponse(
                 devolucion.getVentaId(),
                 devolucion.getMontoDevuelto().toPesos(),
-                "DEVUELTA",
+                devolucion.getEstado(),
                 devolucion.getFechaDevolucion()
         )));
     }
+
+    public record DevolucionRequest(List<DevolucionItemRequest> items) {}
+    public record DevolucionItemRequest(Long productoId, int cantidad) {}
 
     // ---- Mappers ----
 

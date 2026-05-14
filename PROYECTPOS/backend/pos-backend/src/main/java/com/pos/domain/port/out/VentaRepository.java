@@ -11,5 +11,6 @@ public interface VentaRepository {
     Optional<Venta> findById(String ventaId);
     Optional<Venta> findByIdempotencyKey(String key);
     PageResponse<ResumenVentaSimple> findAll(int page, int size);
+    PageResponse<ResumenVentaSimple> findAll(int page, int size, String fechaDesde, String fechaHasta);
     ReporteCierre generarReporte(String fechaDesde, String fechaHasta);
 }

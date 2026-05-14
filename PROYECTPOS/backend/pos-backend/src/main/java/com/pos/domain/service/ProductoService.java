@@ -34,7 +34,7 @@ public class ProductoService
         if (query == null || query.trim().length() < 2) {
             throw new QueryDemasiadoCortaException(query);
         }
-        return productoRepository.buscarPorNombre(query.trim());
+        return productoRepository.buscarPorNombreOCodigo(query.trim());
     }
 
     // ---- ObtenerProductoUseCase ----

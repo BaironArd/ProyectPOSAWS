@@ -67,12 +67,24 @@ export interface ResumenVentaHistorial {
   fechaHora: string;
   total: number;
   cantidadItems: number;
+  estado?: string;           // 'COMPLETADA' | 'DEVUELTA' | 'PARCIAL'
+  montoDevuelto?: number;    // monto devuelto al cliente (con IVA)
+  totalNeto?: number;        // total - montoDevuelto
 }
 
 export interface Devolucion {
   ventaId: string;
   montoDevuelto: number;
-  estado: 'DEVUELTA' | 'PENDIENTE';
+  estado: 'DEVUELTA' | 'PARCIAL' | 'PENDIENTE';
+}
+
+export interface ItemDevolucion {
+  productoId: number;
+  nombre: string;
+  cantidad: number;          // cantidad original comprada
+  cantidadDevolver: number;  // cuántas devuelve el cliente
+  precioUnitario: number;
+  subtotal: number;
 }
 
 export interface VentasPorCajero {

@@ -8,7 +8,7 @@ const itemArb = fc.record({
   nombre: fc.string({ minLength: 1, maxLength: 20 }),
   cantidad: fc.integer({ min: 1, max: 100 }),
   precioUnitario: fc.integer({ min: 0, max: 10_000_000 }),
-}).map((r): ItemCarrito => ({ ...r, subtotal: r.precioUnitario * r.cantidad }));
+}).map((r): ItemCarrito => ({ ...r, subtotal: r.precioUnitario * r.cantidad, stockDisponible: 100 }));
 
 describe('Propiedades — calcularResumen', () => {
   it('P1: iva = Math.round(subtotal × IVA_RATE) para cualquier carrito', () => {

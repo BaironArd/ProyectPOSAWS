@@ -57,11 +57,12 @@ export function InventoryPanel({ inventarioPort }: Props) {
       ) : (
         <table className={styles.tabla} aria-label="Inventario de productos">
           <thead>
-            <tr><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th>Código</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Acciones</th></tr>
           </thead>
           <tbody>
             {productos.map((p) => (
               <tr key={p.id} className={!p.activo ? styles.inactivo : ''}>
+                <td className={styles.codigo}>{p.id}</td>
                 <td>{p.nombre}</td>
                 <td>{formatearPrecio(p.precio)}</td>
                 <td>{p.stock}</td>

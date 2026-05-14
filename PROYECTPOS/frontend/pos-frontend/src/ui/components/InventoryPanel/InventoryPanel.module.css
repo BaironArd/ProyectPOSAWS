@@ -9,6 +9,7 @@
 .tabla { width:100%; border-collapse:collapse; font-size:0.875rem; }
 .tabla th { text-align:left; padding:0.5rem; border-bottom:2px solid #e5e7eb; color:#6b7280; font-weight:600; }
 .tabla td { padding:0.5rem; border-bottom:1px solid #f3f4f6; }
+.codigo { font-family: monospace; font-size:0.85rem; color:#4f46e5; font-weight:600; white-space:nowrap; }
 .inactivo td { opacity:0.5; }
 .badgeActivo { background:#d1fae5; color:#065f46; padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.75rem; font-weight:600; }
 .badgeInactivo { background:#f3f4f6; color:#6b7280; padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.75rem; font-weight:600; }

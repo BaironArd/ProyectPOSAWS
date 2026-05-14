@@ -6,6 +6,7 @@ import java.util.Optional;
 
 public interface ProductoRepository {
     List<Producto> buscarPorNombre(String query);
+    List<Producto> buscarPorNombreOCodigo(String query);
     List<Producto> buscarPorNombrePaginado(String query, int page, int size);
     long contarPorNombre(String query);
     Optional<Producto> findById(Long id);

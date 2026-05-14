@@ -1,5 +1,5 @@
 import type { ResumenVentaHistorial } from '../types/POSState';
 
 export interface IVentaHistorialPort {
-  listar(): Promise<ResumenVentaHistorial[]>;
+  listar(fechaDesde?: string, fechaHasta?: string): Promise<ResumenVentaHistorial[]>;
 }

@@ -87,6 +87,8 @@ interface POSActions {
   setDatosRecibo: (datos: DatosRecibo) => void;
   guardarRecibo: (datos: DatosRecibo) => void;
   resetVenta: () => void;
+  /** Solo limpia carrito/pago y va a IDLE — preserva datosRecibo para mostrar cambio */
+  irAIdle: () => void;
 
   // Historial
   setHistorial: (historial: ResumenVentaHistorial[]) => void;
@@ -236,7 +238,24 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
       montoPagado: 0,
       cambio: 0,
       ventaIdActual: null,
+      datosRecibo: null,
       estado: 'IDLE',
+    }),
+
+  // Solo limpia carrito/pago y va a IDLE — preserva datosRecibo para mostrar cambio
+  irAIdle: () =>
+    set({
+      carrito: [],
+      resumen: { subtotal: 0, iva: 0, total: 0 },
+      query: '',
+      productos: [],
+      metodoPago: null,
+      pagos: [],
+      montoPagado: 0,
+      cambio: 0,
+      ventaIdActual: null,
+      estado: 'IDLE',
+      // datosRecibo se conserva intencionalmente
     }),
 
   // --- Historial ---

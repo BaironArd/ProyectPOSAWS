@@ -13,7 +13,7 @@ public class VentaEntity {
     @Column(nullable = false, unique = true)
     private String ventaId;
 
-    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ItemVentaEntity> items = new ArrayList<>();
 
     @Column(nullable = false)

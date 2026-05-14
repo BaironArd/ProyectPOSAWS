@@ -2,6 +2,8 @@ package com.pos.infrastructure.adapter.in.web;
 
 import com.pos.domain.exception.*;
 import com.pos.infrastructure.adapter.in.web.dto.ErrorResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ProductoNotFoundException.class)
     public ResponseEntity<ErrorResponse> handle(ProductoNotFoundException ex) {
@@ -111,6 +115,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        log.error("ERROR_INTERNO no manejado: {}", ex.getMessage(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of("ERROR_INTERNO", "Ha ocurrido un error interno. Por favor intenta nuevamente."));
     }

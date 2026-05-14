@@ -4,11 +4,11 @@ import { calcularResumen } from '@domain/calculadora';
 
 let ventaCounter = 1;
 
-/** Almacén de ventas completas para el recibo */
-const ventasCompletadas = new Map<string, ConfirmarVentaPayload & { ventaId: string; fechaHora: string }>();
+/** Almacén de ventas completas — accesible por el mock de devolución */
+export const ventasCompletadasMock = new Map<string, ConfirmarVentaPayload & { ventaId: string; fechaHora: string }>();
 
 export function obtenerVentaParaRecibo(ventaId: string) {
-  return ventasCompletadas.get(ventaId);
+  return ventasCompletadasMock.get(ventaId);
 }
 
 export class VentaMock implements IVentaPort {
@@ -18,8 +18,8 @@ export class VentaMock implements IVentaPort {
     const ventaId = `VNT-${fecha}-${String(ventaCounter++).padStart(3, '0')}`;
     const fechaHora = new Date().toISOString();
 
-    // Guardar venta completa para el recibo
-    ventasCompletadas.set(ventaId, { ...payload, ventaId, fechaHora });
+    // Guardar venta completa para el recibo y devoluciones
+    ventasCompletadasMock.set(ventaId, { ...payload, ventaId, fechaHora });
 
     // Registrar en historial dinámico
     const resumen = calcularResumen(payload.carrito);

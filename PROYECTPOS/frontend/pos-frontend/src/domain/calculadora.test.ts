@@ -3,7 +3,7 @@ import { calcularResumen, calcularCambio, calcularSubtotal, IVA_RATE } from './c
 import type { ItemCarrito } from './types/POSState';
 
 function item(productoId: number, precio: number, cantidad: number): ItemCarrito {
-  return { productoId, nombre: `P${productoId}`, cantidad, precioUnitario: precio, subtotal: precio * cantidad };
+  return { productoId, nombre: `P${productoId}`, cantidad, precioUnitario: precio, subtotal: precio * cantidad, stockDisponible: 100 };
 }
 
 describe('calcularSubtotal', () => {

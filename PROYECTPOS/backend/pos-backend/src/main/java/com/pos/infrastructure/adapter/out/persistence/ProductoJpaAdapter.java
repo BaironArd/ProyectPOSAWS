@@ -7,6 +7,7 @@ import jakarta.persistence.OptimisticLockException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,25 @@ public class ProductoJpaAdapter implements ProductoRepository {
     public List<Producto> buscarPorNombre(String query) {
         return jpaRepository.findByNombreContainingIgnoreCaseAndActivoTrue(query)
                 .stream().map(mapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Producto> buscarPorNombreOCodigo(String query) {
+        List<Producto> resultados = new ArrayList<>(buscarPorNombre(query));
+        if (query.matches("\\d+")) {
+            Long id = Long.parseLong(query);
+            jpaRepository.findById(id)
+                    .filter(ProductoEntity::isActivo)
+                    .map(mapper::toDomain)
+                    .ifPresent(producto -> {
+                        boolean existe = resultados.stream()
+                                .anyMatch(p -> p.getId().equals(producto.getId()));
+                        if (!existe) {
+                            resultados.add(producto);
+                        }
+                    });
+        }
+        return resultados;
     }
 
     @Override

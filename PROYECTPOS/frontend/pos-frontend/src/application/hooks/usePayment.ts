@@ -46,18 +46,22 @@ export function usePayment(ventaPort: IVentaPort) {
 
       if (result.ok) {
         setVentaIdActual(result.ventaId);
-        // Calcular cambio correcto para MIXTO con efectivo
-        const sumaTotalPagada = metodoPago === 'MIXTO'
-          ? pagos.reduce((s, p) => s + p.monto, 0)
-          : resumen.total; // débito/crédito/transferencia: exacto
-        const montoEfectivoPagado = metodoPago === 'EFECTIVO'
-          ? montoPagado
-          : metodoPago === 'MIXTO'
-          ? pagos.filter(p => p.metodo === 'EFECTIVO').reduce((s, p) => s + p.monto, 0)
-          : 0;
-        const cambioCalculado = sumaTotalPagada > resumen.total
-          ? sumaTotalPagada - resumen.total
-          : 0;
+
+        // Calcular monto pagado real y cambio según método
+        let montoPagadoReal: number;
+        let cambioCalculado: number;
+
+        if (metodoPago === 'EFECTIVO') {
+          montoPagadoReal = montoPagado;
+          cambioCalculado = montoPagado > resumen.total ? montoPagado - resumen.total : 0;
+        } else if (metodoPago === 'MIXTO') {
+          montoPagadoReal = pagos.reduce((s, p) => s + p.monto, 0);
+          cambioCalculado = montoPagadoReal > resumen.total ? montoPagadoReal - resumen.total : 0;
+        } else {
+          // débito / crédito / transferencia: cobro exacto, sin cambio
+          montoPagadoReal = resumen.total;
+          cambioCalculado = 0;
+        }
 
         const recibo: import('@domain/types/POSState').DatosRecibo = {
           ventaId: result.ventaId,
@@ -72,12 +76,12 @@ export function usePayment(ventaPort: IVentaPort) {
           iva: resumen.iva,
           total: resumen.total,
           metodoPago: metodoPago ?? 'EFECTIVO',
-          montoPagado: metodoPago === 'EFECTIVO' ? montoPagado : sumaTotalPagada,
+          montoPagado: montoPagadoReal,
           cambio: cambioCalculado,
         };
 
         setDatosRecibo(recibo);
-        guardarRecibo(recibo); // guardar para verlo desde el historial
+        guardarRecibo(recibo);
         setEstado('VENTA_COMPLETA');
       } else {
         throw new Error('CONFIRMACION_FALLIDA');

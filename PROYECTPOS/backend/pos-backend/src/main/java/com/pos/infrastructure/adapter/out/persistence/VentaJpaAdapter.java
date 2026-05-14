@@ -22,6 +22,21 @@ public class VentaJpaAdapter implements VentaRepository {
 
     @Override
     public Venta save(Venta venta) {
+        // Si la venta ya existe (tiene ventaId), cargar la entidad existente
+        // y solo actualizar el estado — evita recrear ítems y romper relaciones JPA
+        if (venta.getVentaId() != null) {
+            return jpaRepository.findById(venta.getVentaId())
+                    .map(existente -> {
+                        existente.setEstado(VentaEntity.EstadoVentaEnum.valueOf(venta.getEstado().name()));
+                        VentaEntity saved = jpaRepository.save(existente);
+                        return mapper.toDomain(saved);
+                    })
+                    .orElseGet(() -> {
+                        // No existe aún → inserción nueva
+                        VentaEntity saved = jpaRepository.save(mapper.toEntity(venta));
+                        return mapper.toDomain(saved);
+                    });
+        }
         VentaEntity saved = jpaRepository.save(mapper.toEntity(venta));
         return mapper.toDomain(saved);
     }
@@ -40,6 +55,25 @@ public class VentaJpaAdapter implements VentaRepository {
     public PageResponse<ResumenVentaSimple> findAll(int page, int size) {
         Page<VentaEntity> pageResult = jpaRepository.findAllByOrderByFechaHoraDesc(
                 PageRequest.of(page, size));
+        List<ResumenVentaSimple> items = pageResult.getContent()
+                .stream().map(mapper::toResumenSimple).toList();
+        return PageResponse.of(items, pageResult.getTotalElements(), page, size);
+    }
+
+    @Override
+    public PageResponse<ResumenVentaSimple> findAll(int page, int size, String fechaDesde, String fechaHasta) {
+        if (fechaDesde == null || fechaDesde.isBlank() || fechaHasta == null || fechaHasta.isBlank()) {
+            return findAll(page, size);
+        }
+
+        java.time.Instant desde = java.time.LocalDate.parse(fechaDesde)
+                .atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+        java.time.Instant hasta = java.time.LocalDate.parse(fechaHasta)
+                .plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+
+        Page<VentaEntity> pageResult = jpaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(
+                desde, hasta, PageRequest.of(page, size));
+
         List<ResumenVentaSimple> items = pageResult.getContent()
                 .stream().map(mapper::toResumenSimple).toList();
         return PageResponse.of(items, pageResult.getTotalElements(), page, size);

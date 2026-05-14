@@ -14,7 +14,7 @@ public class ListarVentasService implements ListarVentasUseCase {
     }
 
     @Override
-    public PageResponse<ResumenVentaSimple> listar(int page, int size) {
-        return ventaRepository.findAll(page, size);
+    public PageResponse<ResumenVentaSimple> listar(int page, int size, String fechaDesde, String fechaHasta) {
+        return ventaRepository.findAll(page, size, fechaDesde, fechaHasta);
     }
 }

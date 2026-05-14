@@ -17,9 +17,11 @@ export class ProductoMock implements IProductoPort {
     await new Promise((r) => setTimeout(r, 300));
     const q = query.toLowerCase();
     // SPEC-BE-001: solo productos activos Y con stock > 0 aparecen en búsqueda del cajero
-    return PRODUCTOS_MOCK.filter(
-      (p) => p.activo && p.stock > 0 && p.nombre.toLowerCase().includes(q)
-    );
+    return PRODUCTOS_MOCK.filter((p) => {
+      const coincidePorNombre = p.nombre.toLowerCase().includes(q);
+      const coincidePorCodigo = String(p.id).includes(q);
+      return p.activo && p.stock > 0 && (coincidePorNombre || coincidePorCodigo);
+    });
   }
 }
 

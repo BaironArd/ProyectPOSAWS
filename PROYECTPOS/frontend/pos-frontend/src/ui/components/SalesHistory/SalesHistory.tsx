@@ -19,8 +19,10 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
   const volverDeHistorial = usePOSStore((s) => s.volverDeHistorial);
 
   const [reciboViendo, setReciboViendo] = useState<DatosRecibo | null>(null);
+  const [desde, setDesde] = useState(() => new Date().toISOString().slice(0, 10));
+  const [hasta, setHasta] = useState(() => new Date().toISOString().slice(0, 10));
 
-  useHistory(historialPort);
+  const { cargarHistorial } = useHistory(historialPort);
 
   if (estado !== 'HISTORIAL') return null;
 
@@ -33,8 +35,18 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
         </button>
       </div>
 
+      <div className={styles.filtros}>
+        <label className={styles.label}>Desde</label>
+        <input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} className={styles.inputFecha} />
+        <label className={styles.label}>Hasta</label>
+        <input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} className={styles.inputFecha} />
+        <button className={styles.btnBuscar} onClick={() => cargarHistorial(desde, hasta)}>
+          Buscar
+        </button>
+      </div>
+
       {historial.length === 0 ? (
-        <p className={styles.vacio}>No hay ventas registradas en este turno</p>
+        <p className={styles.vacio}>No hay ventas registradas en el rango seleccionado</p>
       ) : (
         <table className={styles.tabla} aria-label="Historial de ventas">
           <thead>
@@ -42,6 +54,8 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
               <th>ID Venta</th>
               <th>Fecha / Hora</th>
               <th>Total</th>
+              <th>Devuelto</th>
+              <th>Estado</th>
               <th>Ítems</th>
               <th>Factura</th>
               {onDevolver && <th>Devolución</th>}
@@ -50,18 +64,26 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
           <tbody>
             {historial.map((venta) => {
               const recibo = recibosGuardados[venta.ventaId];
+              const devuelta = venta.estado === 'DEVUELTA' || venta.estado === 'PARCIAL';
               return (
-                <tr key={venta.ventaId}>
+                <tr key={venta.ventaId} className={devuelta ? styles.filaDevuelta : ''}>
                   <td>{venta.ventaId}</td>
                   <td>{formatearFecha(venta.fechaHora)}</td>
                   <td>{formatearPrecio(venta.total)}</td>
+                  <td>
+                    {venta.montoDevuelto
+                      ? <span className={styles.montoDevuelto}>−{formatearPrecio(venta.montoDevuelto)}</span>
+                      : <span className={styles.sinDevolucion}>—</span>}
+                  </td>
+                  <td>
+                    {venta.estado === 'DEVUELTA' && <span className={styles.badgeDevuelta}>↩ Devuelta</span>}
+                    {venta.estado === 'PARCIAL'  && <span className={styles.badgeParcial}>🔄 Parcial</span>}
+                    {(!venta.estado || venta.estado === 'COMPLETADA') && <span className={styles.badgeOk}>✓ Completada</span>}
+                  </td>
                   <td>{venta.cantidadItems}</td>
                   <td>
                     {recibo ? (
-                      <button
-                        className={styles.btnFactura}
-                        onClick={() => setReciboViendo(recibo)}
-                      >
+                      <button className={styles.btnFactura} onClick={() => setReciboViendo(recibo)}>
                         🧾 Ver
                       </button>
                     ) : (
@@ -70,12 +92,13 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
                   </td>
                   {onDevolver && (
                     <td>
-                      <button
-                        className={styles.btnDevolver}
-                        onClick={() => onDevolver(venta.ventaId)}
-                      >
-                        Devolver
-                      </button>
+                      {!devuelta ? (
+                        <button className={styles.btnDevolver} onClick={() => onDevolver(venta.ventaId)}>
+                          Devolver
+                        </button>
+                      ) : (
+                        <span className={styles.sinFactura}>—</span>
+                      )}
                     </td>
                   )}
                 </tr>

@@ -53,18 +53,18 @@ export function POSApp({
   const estado = usePOSStore((s) => s.estado);
   const sesion = usePOSStore((s) => s.sesion);
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
-  const cambio = usePOSStore((s) => s.cambio);
   const datosRecibo = usePOSStore((s) => s.datosRecibo);
   const setEstado = usePOSStore((s) => s.setEstado);
   const resetVenta = usePOSStore((s) => s.resetVenta);
+  const irAIdle = usePOSStore((s) => s.irAIdle);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
 
-  // Auto-retorno a IDLE tras 3s en VENTA_COMPLETA
+  // Auto-retorno a IDLE tras 8s — preserva datosRecibo para que el cambio siga visible
   useEffect(() => {
     if (estado !== 'VENTA_COMPLETA') return;
-    const timer = setTimeout(() => resetVenta(), 3000);
+    const timer = setTimeout(() => irAIdle(), 8000);
     return () => clearTimeout(timer);
-  }, [estado, resetVenta]);
+  }, [estado, irAIdle]);
 
   // Pantalla de login
   if (!sesion || estado === 'LOGIN') {

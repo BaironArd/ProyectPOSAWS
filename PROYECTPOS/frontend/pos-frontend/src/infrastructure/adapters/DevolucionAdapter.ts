@@ -1,23 +1,52 @@
-import type { IDevolucionPort } from '@domain/ports/IDevolucionPort';
-import type { Devolucion } from '@domain/types/POSState';
+import type { IDevolucionPort, ItemDevolucionRequest } from '@domain/ports/IDevolucionPort';
+import type { Devolucion, ItemDevolucion } from '@domain/types/POSState';
 import { httpFetch } from './httpClient';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export class DevolucionAdapter implements IDevolucionPort {
-  async procesar(ventaId: string): Promise<Devolucion> {
+  /** Obtiene los ítems de una venta para mostrarlos en el panel de devolución */
+  async obtenerItems(ventaId: string): Promise<ItemDevolucion[]> {
+    const res = await httpFetch(`${API_BASE}/ventas/${ventaId}`);
+    if (!res.ok) throw new Error('VENTA_NO_ENCONTRADA');
+    const json = await res.json() as {
+      data: {
+        items: Array<{
+          productoId: number;
+          nombre: string;
+          cantidad: number;
+          precioUnitario: number;
+          subtotal: number;
+        }>;
+      };
+    };
+    return (json.data.items ?? []).map(i => ({
+      productoId: i.productoId,
+      nombre: i.nombre,
+      cantidad: i.cantidad,
+      cantidadDevolver: i.cantidad,
+      precioUnitario: i.precioUnitario,
+      subtotal: i.subtotal,
+    }));
+  }
+
+  /** Procesa la devolución — parcial o total según los ítems enviados */
+  async procesar(ventaId: string, items: ItemDevolucionRequest[]): Promise<Devolucion> {
     const res = await httpFetch(`${API_BASE}/ventas/${ventaId}/devolucion`, {
       method: 'POST',
+      body: JSON.stringify({ items }),
     });
     if (!res.ok) {
       const err = await res.json() as { error: { codigo: string } };
       throw new Error(err.error?.codigo ?? 'DEVOLUCION_FALLIDA');
     }
-    const json = await res.json() as { data: { ventaId: string; montoDevuelto: number; estado: string } };
+    const json = await res.json() as {
+      data: { ventaId: string; montoDevuelto: number; estado: string };
+    };
     return {
       ventaId: json.data.ventaId,
       montoDevuelto: json.data.montoDevuelto,
-      estado: json.data.estado as 'DEVUELTA' | 'PENDIENTE',
+      estado: json.data.estado as 'DEVUELTA' | 'PARCIAL' | 'PENDIENTE',
     };
   }
 }

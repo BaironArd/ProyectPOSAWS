@@ -3,28 +3,154 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 1.5rem;
-  max-width: 480px;
+  max-width: 700px;
   margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
 }
 
 .titulo {
   font-size: 1.1rem;
   font-weight: 600;
-  margin: 0 0 1rem;
+  margin: 0;
   color: #111827;
 }
 
-.resumen {
+.ventaId {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0 0 0.5rem;
+}
+
+.instruccion {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0 0 1rem;
+  font-style: italic;
+}
+
+.cargando {
+  color: #6b7280;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.sinVenta {
+  color: #6b7280;
+  margin: 1rem 0;
+}
+
+/* ── Tabla de ítems ── */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.tabla th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.tabla td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.centrado { text-align: center; }
+
+.filaExcluida td {
+  opacity: 0.4;
+}
+
+.subtotalDev {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.noDevuelve {
+  color: #d1d5db;
+}
+
+/* ── Control de cantidad ── */
+.cantidadControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.btnCantidad {
+  width: 26px;
+  height: 26px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
   background: #f9fafb;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.btnCantidad:hover:not(:disabled) { background: #e5e7eb; }
+.btnCantidad:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cantidadValor {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ── Resumen ── */
+.resumenDevolucion {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 0.75rem 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filaResumen {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.filaTotal {
+  border-top: 1px solid #fecaca;
+  padding-top: 0.4rem;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+
+.labelMonto {
   font-size: 0.9rem;
   color: #374151;
 }
 
-.resumen p { margin: 0.25rem 0; }
+.montoDevolver {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #dc2626;
+}
 
+/* ── Acciones ── */
 .acciones {
   display: flex;
   gap: 0.75rem;
@@ -47,25 +173,64 @@
 .btnConfirmar:disabled { background: #fca5a5; cursor: not-allowed; }
 
 .btnCancelar {
-  flex: 1;
-  padding: 0.7rem;
+  padding: 0.4rem 0.85rem;
   background: #f3f4f6;
   color: #374151;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
 }
 
 .btnCancelar:hover:not(:disabled) { background: #e5e7eb; }
 
+/* ── Éxito ── */
 .exito {
   background: #f0fdf4;
   border: 1px solid #86efac;
   border-radius: 8px;
-  padding: 1rem 1.25rem;
+  padding: 2rem 1.5rem;
   color: #166534;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.exitoIcono {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.exito h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.exito p {
+  margin: 0.25rem 0;
   font-size: 0.95rem;
 }
+
+.estadoBadge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btnCerrar {
+  margin-top: 1.25rem;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btnCerrar:hover { background: #1d4ed8; }

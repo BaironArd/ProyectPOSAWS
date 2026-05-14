@@ -6,7 +6,6 @@ import com.pos.infrastructure.adapter.in.web.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse as OpenApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -30,10 +29,10 @@ public class AuthController {
     @Operation(summary = "Iniciar sesión",
                description = "Autentica un usuario y retorna un token JWT")
     @ApiResponses(value = {
-        @OpenApiResponse(responseCode = "200", description = "Login exitoso",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Login exitoso",
                         content = @Content(mediaType = "application/json",
                                          schema = @Schema(implementation = ApiResponse.class))),
-        @OpenApiResponse(responseCode = "401", description = "Credenciales inválidas",
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Credenciales inválidas",
                         content = @Content(mediaType = "application/json"))
     })
     public ResponseEntity<ApiResponse<SesionTokenResponse>> login(
@@ -47,7 +46,7 @@ public class AuthController {
     @Operation(summary = "Cerrar sesión",
                description = "Invalida el token JWT actual")
     @ApiResponses(value = {
-        @OpenApiResponse(responseCode = "204", description = "Logout exitoso")
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "204", description = "Logout exitoso")
     })
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Void> logout(

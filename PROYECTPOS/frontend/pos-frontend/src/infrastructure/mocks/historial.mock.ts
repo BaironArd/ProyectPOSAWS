@@ -12,10 +12,39 @@ export function registrarVentaEnHistorial(entrada: ResumenVentaHistorial): void 
   historialDinamico.unshift(entrada); // más reciente primero
 }
 
+/** Llamado por DevolucionMock para actualizar el estado y monto de una venta devuelta */
+export function actualizarVentaEnHistorial(
+  ventaId: string,
+  cambios: { estado: string; montoDevuelto: number }
+): void {
+  const idx = historialDinamico.findIndex(v => v.ventaId === ventaId);
+  if (idx === -1) return;
+  const venta = historialDinamico[idx]!;
+  historialDinamico[idx] = {
+    ...venta,
+    estado: cambios.estado,
+    // El total neto = total original - monto devuelto
+    totalNeto: venta.total - cambios.montoDevuelto,
+    montoDevuelto: cambios.montoDevuelto,
+  };
+}
+
 export class HistorialMock implements IVentaHistorialPort {
-  async listar(): Promise<ResumenVentaHistorial[]> {
+  async listar(fechaDesde?: string, fechaHasta?: string): Promise<ResumenVentaHistorial[]> {
     await new Promise((r) => setTimeout(r, 300));
-    return [...historialDinamico];
+    let resultado = [...historialDinamico];
+
+    if (fechaDesde || fechaHasta) {
+      const desde = fechaDesde ? new Date(fechaDesde).getTime() : 0;
+      const hasta = fechaHasta ? new Date(fechaHasta).getTime() + 86400000 : Infinity;
+
+      resultado = resultado.filter((v) => {
+        const fecha = new Date(v.fechaHora).getTime();
+        return fecha >= desde && fecha < hasta;
+      });
+    }
+
+    return resultado;
   }
 }
 
