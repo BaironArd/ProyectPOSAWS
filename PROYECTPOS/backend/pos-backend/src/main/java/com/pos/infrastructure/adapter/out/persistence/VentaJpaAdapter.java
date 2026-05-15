@@ -22,23 +22,49 @@ public class VentaJpaAdapter implements VentaRepository {
 
     @Override
     public Venta save(Venta venta) {
-        // Si la venta ya existe (tiene ventaId), cargar la entidad existente
-        // y solo actualizar el estado — evita recrear ítems y romper relaciones JPA
         if (venta.getVentaId() != null) {
             return jpaRepository.findById(venta.getVentaId())
                     .map(existente -> {
-                        existente.setEstado(VentaEntity.EstadoVentaEnum.valueOf(venta.getEstado().name()));
+                        actualizarEntidadExistente(existente, venta);
                         VentaEntity saved = jpaRepository.save(existente);
                         return mapper.toDomain(saved);
                     })
                     .orElseGet(() -> {
-                        // No existe aún → inserción nueva
                         VentaEntity saved = jpaRepository.save(mapper.toEntity(venta));
                         return mapper.toDomain(saved);
                     });
         }
         VentaEntity saved = jpaRepository.save(mapper.toEntity(venta));
         return mapper.toDomain(saved);
+    }
+
+    private void actualizarEntidadExistente(VentaEntity existente, Venta venta) {
+        existente.setSubtotal(venta.getResumen().subtotal().toPesos());
+        existente.setIva(venta.getResumen().iva().toPesos());
+        existente.setTotal(venta.getResumen().total().toPesos());
+        existente.setMontoPagado(venta.getResumen().montoPagado().toPesos());
+        existente.setCambio(venta.getResumen().cambio().toPesos());
+        existente.setEstado(VentaEntity.EstadoVentaEnum.valueOf(venta.getEstado().name()));
+        existente.setFechaHora(venta.getFechaHora());
+        existente.setIdempotencyKey(venta.getIdempotencyKey());
+        existente.setUsuarioCajero(venta.getUsuarioCajero());
+        existente.setMetodoPago(venta.getPagos() != null && !venta.getPagos().isEmpty()
+                ? venta.getPagos().get(0).metodo().name()
+                : null);
+
+        List<ItemVentaEntity> itemEntities = venta.getItems().stream().map(item -> {
+            ItemVentaEntity entity = new ItemVentaEntity();
+            entity.setVenta(existente);
+            entity.setProductoId(item.getProductoId());
+            entity.setNombre(item.getNombre());
+            entity.setCantidad(item.getCantidad());
+            entity.setPrecioUnitario(item.getPrecioUnitario().toPesos());
+            entity.setSubtotal(item.getSubtotal().toPesos());
+            return entity;
+        }).toList();
+
+        existente.getItems().clear();
+        existente.getItems().addAll(itemEntities);
     }
 
     @Override

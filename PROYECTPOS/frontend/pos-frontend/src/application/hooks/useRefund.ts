@@ -13,6 +13,8 @@ export function useRefund(devolucionPort: IDevolucionPort) {
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
   const estado = usePOSStore((s) => s.estado);
   const setError = usePOSStore((s) => s.setError);
+  const recibosGuardados = usePOSStore((s) => s.recibosGuardados);
+  const guardarRecibo = usePOSStore((s) => s.guardarRecibo);
 
   // Cargar ítems de la venta cuando se entra al estado DEVOLUCION
   useEffect(() => {
@@ -46,6 +48,7 @@ export function useRefund(devolucionPort: IDevolucionPort) {
     try {
       const result = await devolucionPort.procesar(ventaIdActual, itemsADevolver);
       setDevolucion(result);
+      actualizarRecibo(ventaIdActual);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al procesar la devolución';
       setError({ codigo: 'DEVOLUCION_FALLIDA', mensaje: `No se pudo procesar la devolución: ${msg}` });
@@ -63,6 +66,37 @@ export function useRefund(devolucionPort: IDevolucionPort) {
   const ivaDevolucion = Math.round(subtotalDevolucion * IVA_RATE);
   // Total a devolver al cliente (incluye IVA)
   const montoADevolver = subtotalDevolucion + ivaDevolucion;
+
+  function actualizarRecibo(ventaId: string) {
+    const reciboPrevio = recibosGuardados[ventaId];
+    if (!reciboPrevio) return;
+
+    const itemsActualizados = items
+      .map((item) => {
+        const cantidadRestante = item.cantidad - item.cantidadDevolver;
+        return {
+          nombre: item.nombre,
+          cantidad: cantidadRestante,
+          subtotal: cantidadRestante * item.precioUnitario,
+        };
+      })
+      .filter((item) => item.cantidad > 0);
+
+    const subtotal = itemsActualizados.reduce((sum, item) => sum + item.subtotal, 0);
+    const iva = Math.round(subtotal * IVA_RATE);
+    const total = subtotal + iva;
+    const montoPagado = reciboPrevio.montoPagado;
+    const cambio = Math.max(0, montoPagado - total);
+
+    guardarRecibo({
+      ...reciboPrevio,
+      items: itemsActualizados,
+      subtotal,
+      iva,
+      total,
+      cambio,
+    });
+  }
 
   const hayItemsSeleccionados = items.some(i => i.cantidadDevolver > 0);
 

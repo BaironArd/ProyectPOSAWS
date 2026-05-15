@@ -20,12 +20,12 @@ public interface VentaJpaRepository extends JpaRepository<VentaEntity, String> {
     // Queries compatibles con H2 y PostgreSQL usando Instant range
 
     /** Total de ventas en el rango (completadas + devueltas) */
-    @Query("SELECT COUNT(v) FROM VentaEntity v WHERE v.estado IN ('COMPLETADA', 'DEVUELTA') " +
+    @Query("SELECT COUNT(v) FROM VentaEntity v WHERE v.estado IN ('COMPLETADA', 'DEVUELTA', 'PARCIALMENTE_DEVUELTA') " +
            "AND v.fechaHora >= :desde AND v.fechaHora < :hasta")
     int countVentasEnRango(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 
-    /** Suma del monto bruto de todas las ventas (completadas + devueltas) */
-    @Query("SELECT SUM(v.total) FROM VentaEntity v WHERE v.estado IN ('COMPLETADA', 'DEVUELTA') " +
+    /** Suma del monto bruto de todas las ventas (completadas + devueltas + parciales) */
+    @Query("SELECT SUM(v.total) FROM VentaEntity v WHERE v.estado IN ('COMPLETADA', 'DEVUELTA', 'PARCIALMENTE_DEVUELTA') " +
            "AND v.fechaHora >= :desde AND v.fechaHora < :hasta")
     Long sumTotalEnRango(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 

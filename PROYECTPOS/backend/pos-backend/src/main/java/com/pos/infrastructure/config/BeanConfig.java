@@ -67,8 +67,9 @@ public class BeanConfig {
 
     @Bean
     public DevolucionService devolucionService(VentaRepository ventaRepository,
-                                               ProductoRepository productoRepository) {
-        return new DevolucionService(ventaRepository, productoRepository);
+                                               ProductoRepository productoRepository,
+                                               CalculadoraVenta calculadora) {
+        return new DevolucionService(ventaRepository, productoRepository, calculadora);
     }
 
     @Bean

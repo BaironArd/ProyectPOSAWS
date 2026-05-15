@@ -22,11 +22,14 @@ public class DevolucionService implements DevolverVentaUseCase {
 
     private final VentaRepository ventaRepository;
     private final ProductoRepository productoRepository;
+    private final CalculadoraVenta calculadora;
 
     public DevolucionService(VentaRepository ventaRepository,
-                              ProductoRepository productoRepository) {
+                              ProductoRepository productoRepository,
+                              CalculadoraVenta calculadora) {
         this.ventaRepository = ventaRepository;
         this.productoRepository = productoRepository;
+        this.calculadora = calculadora;
     }
 
     /** Devolución total: devuelve todos los ítems de la venta */
@@ -34,16 +37,19 @@ public class DevolucionService implements DevolverVentaUseCase {
     public Devolucion devolver(String ventaId) {
         Venta venta = cargarVentaDevolvible(ventaId);
 
+        Dinero montoDevuelto = venta.getResumen().total();
         List<ItemDevolucionCommand> todosLosItems = venta.getItems().stream()
                 .map(i -> new ItemDevolucionCommand(i.getProductoId(), i.getCantidad()))
                 .toList();
 
         restaurarStock(todosLosItems, venta);
 
+        venta.getItems().clear();
+        venta.setResumen(calculadora.calcular(venta.getItems(), venta.getResumen().montoPagado()));
         venta.setEstado(EstadoVenta.DEVUELTA);
         ventaRepository.save(venta);
 
-        return new Devolucion(ventaId, venta.getResumen().total(), Instant.now(), "DEVUELTA");
+        return new Devolucion(ventaId, montoDevuelto, Instant.now(), "DEVUELTA");
     }
 
     /** Devolución parcial: solo los ítems y cantidades indicados */
@@ -54,24 +60,34 @@ public class DevolucionService implements DevolverVentaUseCase {
         Map<Long, ItemVenta> itemsVenta = venta.getItems().stream()
                 .collect(Collectors.toMap(ItemVenta::getProductoId, i -> i));
 
-        // Calcular subtotal devuelto y aplicar IVA (19%)
-        long subtotalDevuelto = 0;
+        Dinero subtotalDevuelto = Dinero.CERO;
         for (ItemDevolucionCommand cmd : itemsADevolver) {
             ItemVenta itemOriginal = itemsVenta.get(cmd.productoId());
             if (itemOriginal == null) continue;
-            int cantidad = Math.min(cmd.cantidad(), itemOriginal.getCantidad());
-            if (cantidad <= 0) continue;
-            subtotalDevuelto += itemOriginal.getPrecioUnitario().toPesos() * cantidad;
+            int cantidadReal = Math.min(cmd.cantidad(), itemOriginal.getCantidad());
+            if (cantidadReal <= 0) continue;
+
+            Dinero subtotalItem = itemOriginal.getPrecioUnitario().por(cantidadReal);
+            subtotalDevuelto = subtotalDevuelto.mas(subtotalItem);
+
+            itemOriginal.setCantidad(itemOriginal.getCantidad() - cantidadReal);
+            itemOriginal.setSubtotal(itemOriginal.getPrecioUnitario().por(itemOriginal.getCantidad()));
         }
-        long ivaDevuelto = Math.round(subtotalDevuelto * Dinero.IVA_RATE);
-        Dinero montoDevuelto = Dinero.dePesos(subtotalDevuelto + ivaDevuelto);
+
+        venta.getItems().removeIf(item -> item.getCantidad() <= 0);
+        Dinero ivaDevuelto = subtotalDevuelto.iva();
+        Dinero montoDevuelto = subtotalDevuelto.mas(ivaDevuelto);
 
         restaurarStock(itemsADevolver, venta);
 
-        venta.setEstado(EstadoVenta.DEVUELTA);
+        venta.setResumen(calculadora.calcular(venta.getItems(), venta.getResumen().montoPagado()));
+        EstadoVenta estadoFinal = venta.getItems().isEmpty()
+                ? EstadoVenta.DEVUELTA
+                : EstadoVenta.PARCIALMENTE_DEVUELTA;
+        venta.setEstado(estadoFinal);
         ventaRepository.save(venta);
 
-        return new Devolucion(ventaId, montoDevuelto, Instant.now(), "DEVUELTA");
+        return new Devolucion(ventaId, montoDevuelto, Instant.now(), estadoFinal == EstadoVenta.DEVUELTA ? "DEVUELTA" : "PARCIAL");
     }
 
     // ── Helpers ──
@@ -83,7 +99,8 @@ public class DevolucionService implements DevolverVentaUseCase {
         if (venta.getEstado() == EstadoVenta.DEVUELTA) {
             throw new VentaYaDevueltaException(ventaId);
         }
-        if (venta.getEstado() != EstadoVenta.COMPLETADA) {
+        // Permitir devoluciones en ventas COMPLETADAS o PARCIALMENTE_DEVUELTAS
+        if (venta.getEstado() != EstadoVenta.COMPLETADA && venta.getEstado() != EstadoVenta.PARCIALMENTE_DEVUELTA) {
             throw new VentaNoDevolvibleException(ventaId, venta.getEstado().name());
         }
         return venta;

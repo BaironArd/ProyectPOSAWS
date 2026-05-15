@@ -45,7 +45,7 @@ public class VentaEntity {
 
     private String metodoPago;
 
-    public enum EstadoVentaEnum { COMPLETADA, DEVUELTA, CANCELADA }
+    public enum EstadoVentaEnum { COMPLETADA, PARCIALMENTE_DEVUELTA, DEVUELTA, CANCELADA }
 
     public VentaEntity() {}
 
