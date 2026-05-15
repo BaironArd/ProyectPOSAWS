@@ -5,8 +5,6 @@ import { ventasCompletadasMock } from './venta.mock';
 import { inventarioMock } from './inventario.mock';
 import { actualizarVentaEnHistorial } from './historial.mock';
 
-const DEVUELTAS = new Set<string>();
-
 export class DevolucionMock implements IDevolucionPort {
   async obtenerItems(ventaId: string): Promise<ItemDevolucion[]> {
     await new Promise((r) => setTimeout(r, 300));
@@ -14,22 +12,20 @@ export class DevolucionMock implements IDevolucionPort {
     const venta = ventasCompletadasMock.get(ventaId);
     if (!venta) throw new Error('VENTA_NO_ENCONTRADA');
 
-    return venta.carrito.map(i => ({
-      productoId: i.productoId,
-      nombre: i.nombre,
-      cantidad: i.cantidad,
-      cantidadDevolver: i.cantidad,
-      precioUnitario: i.precioUnitario,
-      subtotal: i.subtotal,
-    }));
+    return venta.carrito
+      .filter((i) => i.cantidad > 0)
+      .map(i => ({
+        productoId: i.productoId,
+        nombre: i.nombre,
+        cantidad: i.cantidad,
+        cantidadDevolver: i.cantidad,
+        precioUnitario: i.precioUnitario,
+        subtotal: i.subtotal,
+      }));
   }
 
   async procesar(ventaId: string, items: ItemDevolucionRequest[]): Promise<Devolucion> {
     await new Promise((r) => setTimeout(r, 400));
-
-    if (DEVUELTAS.has(ventaId)) {
-      throw new Error('VENTA_YA_DEVUELTA');
-    }
 
     const venta = ventasCompletadasMock.get(ventaId);
     if (!venta) throw new Error('VENTA_NO_ENCONTRADA');
@@ -42,14 +38,14 @@ export class DevolucionMock implements IDevolucionPort {
     const ivaDevuelto = Math.round(subtotalDevuelto * IVA_RATE);
     const montoDevuelto = subtotalDevuelto + ivaDevuelto;
 
-    // Verificar si es devolución total
-    const esTotal = items.length === venta.carrito.length &&
-      items.every(req => {
-        const item = venta.carrito.find(i => i.productoId === req.productoId);
-        return item && req.cantidad === item.cantidad;
-      });
-
-    if (esTotal) DEVUELTAS.add(ventaId);
+    // Actualizar cantidades en el carrito
+    items.forEach(req => {
+      const item = venta.carrito.find(i => i.productoId === req.productoId);
+      if (item) {
+        item.cantidad -= req.cantidad;
+        item.subtotal = item.cantidad * item.precioUnitario;
+      }
+    });
 
     // Restaurar stock en el inventario mock
     for (const req of items) {
@@ -62,16 +58,18 @@ export class DevolucionMock implements IDevolucionPort {
       }
     }
 
-    // Actualizar el historial: marcar la venta como devuelta y ajustar el total
+    const estadoFinal = venta.carrito.every((i) => i.cantidad === 0) ? 'DEVUELTA' : 'PARCIAL';
+
+    // Actualizar el historial sin cerrar la venta
     actualizarVentaEnHistorial(ventaId, {
-      estado: esTotal ? 'DEVUELTA' : 'PARCIAL',
+      estado: estadoFinal,
       montoDevuelto,
     });
 
     return {
       ventaId,
       montoDevuelto,
-      estado: esTotal ? 'DEVUELTA' : 'PARCIAL',
+      estado: estadoFinal,
     };
   }
 }

@@ -64,9 +64,10 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
           <tbody>
             {historial.map((venta) => {
               const recibo = recibosGuardados[venta.ventaId];
-              const devuelta = venta.estado === 'DEVUELTA' || venta.estado === 'PARCIAL';
+              const tieneDevolucion = venta.estado === 'DEVUELTA' || venta.estado === 'PARCIAL';
+              const puedeDevolver = venta.estado !== 'DEVUELTA';
               return (
-                <tr key={venta.ventaId} className={devuelta ? styles.filaDevuelta : ''}>
+                <tr key={venta.ventaId} className={tieneDevolucion ? styles.filaDevuelta : ''}>
                   <td>{venta.ventaId}</td>
                   <td>{formatearFecha(venta.fechaHora)}</td>
                   <td>{formatearPrecio(venta.total)}</td>
@@ -92,7 +93,7 @@ export function SalesHistory({ historialPort, onDevolver }: Props) {
                   </td>
                   {onDevolver && (
                     <td>
-                      {!devuelta ? (
+                      {puedeDevolver ? (
                         <button className={styles.btnDevolver} onClick={() => onDevolver(venta.ventaId)}>
                           Devolver
                         </button>

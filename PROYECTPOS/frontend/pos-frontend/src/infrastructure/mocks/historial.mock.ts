@@ -20,12 +20,16 @@ export function actualizarVentaEnHistorial(
   const idx = historialDinamico.findIndex(v => v.ventaId === ventaId);
   if (idx === -1) return;
   const venta = historialDinamico[idx]!;
+  const montoDevueltoPrevio = venta.montoDevuelto ?? 0;
+  const montoDevueltoTotal = montoDevueltoPrevio + cambios.montoDevuelto;
+  const totalNeto = Math.max(0, venta.total - montoDevueltoTotal);
+  const estadoActualizado = totalNeto === 0 ? 'DEVUELTA' : 'PARCIAL';
+
   historialDinamico[idx] = {
     ...venta,
-    estado: cambios.estado,
-    // El total neto = total original - monto devuelto
-    totalNeto: venta.total - cambios.montoDevuelto,
-    montoDevuelto: cambios.montoDevuelto,
+    estado: estadoActualizado,
+    totalNeto,
+    montoDevuelto: montoDevueltoTotal,
   };
 }
 
