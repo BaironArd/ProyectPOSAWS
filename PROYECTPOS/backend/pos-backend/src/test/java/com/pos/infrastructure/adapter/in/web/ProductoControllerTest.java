@@ -4,8 +4,10 @@ import com.pos.domain.exception.ProductoNotFoundException;
 import com.pos.domain.exception.QueryDemasiadoCortaException;
 import com.pos.domain.model.Dinero;
 import com.pos.domain.model.Producto;
-import com.pos.domain.port.in.BuscarProductosUseCase;
-import com.pos.domain.port.in.ObtenerProductoUseCase;
+import com.pos.domain.port.out.TokenRepository;
+import com.pos.domain.service.ProductoService;
+import com.pos.infrastructure.config.SecurityConfig;
+import com.pos.infrastructure.security.JwtService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -21,17 +23,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProductoController.class)
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, SecurityConfig.class})
 class ProductoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private BuscarProductosUseCase buscarProductos;
+    private ProductoService productoService;
 
     @MockBean
-    private ObtenerProductoUseCase obtenerProducto;
+    private JwtService jwtService;
+
+    @MockBean
+    private TokenRepository tokenRepository;
 
     private Producto productoMock() {
         return new Producto(1L, "Mouse Óptico USB", Dinero.dePesos(30000), 15, "Periféricos", true);
@@ -42,7 +47,7 @@ class ProductoControllerTest {
     @Test
     @WithMockUser
     void buscar_conQueryValida_retorna200ConLista() throws Exception {
-        when(buscarProductos.buscar("mouse")).thenReturn(List.of(productoMock()));
+        when(productoService.buscar("mouse")).thenReturn(List.of(productoMock()));
 
         mockMvc.perform(get("/api/v1/productos").param("q", "mouse"))
                 .andExpect(status().isOk())
@@ -55,7 +60,7 @@ class ProductoControllerTest {
     @Test
     @WithMockUser
     void buscar_sinResultados_retorna200ConArrayVacio() throws Exception {
-        when(buscarProductos.buscar("xyz")).thenReturn(List.of());
+        when(productoService.buscar("xyz")).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/productos").param("q", "xyz"))
                 .andExpect(status().isOk())
@@ -66,7 +71,7 @@ class ProductoControllerTest {
     @Test
     @WithMockUser
     void buscar_conQueryCorta_retorna400ConCodigoEsperado() throws Exception {
-        when(buscarProductos.buscar("a"))
+        when(productoService.buscar("a"))
                 .thenThrow(new QueryDemasiadoCortaException("a"));
 
         mockMvc.perform(get("/api/v1/productos").param("q", "a"))
@@ -79,7 +84,7 @@ class ProductoControllerTest {
     @Test
     @WithMockUser
     void obtener_conIdExistente_retorna200() throws Exception {
-        when(obtenerProducto.obtener(1L)).thenReturn(productoMock());
+        when(productoService.obtener(1L)).thenReturn(productoMock());
 
         mockMvc.perform(get("/api/v1/productos/1"))
                 .andExpect(status().isOk())
@@ -90,7 +95,7 @@ class ProductoControllerTest {
     @Test
     @WithMockUser
     void obtener_conIdInexistente_retorna404() throws Exception {
-        when(obtenerProducto.obtener(99L))
+        when(productoService.obtener(99L))
                 .thenThrow(new ProductoNotFoundException(99L));
 
         mockMvc.perform(get("/api/v1/productos/99"))

@@ -11,6 +11,7 @@ public class Venta {
     private String ventaId;
     private List<ItemVenta> items;
     private ResumenVenta resumen;
+    private Dinero montoDevuelto = Dinero.CERO;
     private EstadoVenta estado;
     private Instant fechaHora;
     private String idempotencyKey;
@@ -25,12 +26,16 @@ public class Venta {
         this.ventaId = ventaId;
         this.items = items;
         this.resumen = resumen;
+        this.montoDevuelto = Dinero.CERO;
         this.estado = estado;
         this.fechaHora = fechaHora;
         this.idempotencyKey = idempotencyKey;
         this.usuarioCajero = usuarioCajero;
         this.pagos = pagos;
     }
+
+    public Dinero getMontoDevuelto() { return montoDevuelto; }
+    public void setMontoDevuelto(Dinero montoDevuelto) { this.montoDevuelto = montoDevuelto; }
 
     public String getVentaId() { return ventaId; }
     public void setVentaId(String ventaId) { this.ventaId = ventaId; }

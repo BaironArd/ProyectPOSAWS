@@ -1,5 +1,6 @@
 import type { IVentaPort, ConfirmarVentaPayload, ConfirmarVentaResult } from '@domain/ports/IVentaPort';
 import { httpFetch } from './httpClient';
+import { toPosApiError } from './toPosApiError';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -17,7 +18,7 @@ export class VentaAdapter implements IVentaPort {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('CONFIRMACION_FALLIDA');
+    if (!res.ok) throw await toPosApiError(res);
     const data = await res.json() as { data: { ventaId: string } };
     return { ok: true, ventaId: data.data.ventaId };
   }

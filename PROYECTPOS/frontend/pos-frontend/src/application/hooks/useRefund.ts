@@ -3,6 +3,8 @@ import { usePOSStore } from '@application/store/usePOSStore';
 import type { IDevolucionPort, ItemDevolucionRequest } from '@domain/ports/IDevolucionPort';
 import type { Devolucion, ItemDevolucion } from '@domain/types/POSState';
 import { IVA_RATE } from '@domain/calculadora';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 export function useRefund(devolucionPort: IDevolucionPort) {
   const [procesando, setProcesando] = useState(false);
@@ -24,7 +26,19 @@ export function useRefund(devolucionPort: IDevolucionPort) {
     setCargandoItems(true);
     devolucionPort.obtenerItems(ventaIdActual)
       .then((its) => setItems(its.map(i => ({ ...i, cantidadDevolver: i.cantidad }))))
-      .catch(() => setError({ codigo: 'DEVOLUCION_ERROR', mensaje: 'No se pudieron cargar los ítems de la venta.' }))
+      .catch((err) => {
+        if (err instanceof PosApiError) {
+          setError({
+            codigo: err.codigo,
+            mensaje: mensajeErrorApi(err.codigo, err.message),
+          });
+        } else {
+          setError({
+            codigo: 'DEVOLUCION_ERROR',
+            mensaje: mensajeErrorApi('DEVOLUCION_ERROR', 'Sin detalle'),
+          });
+        }
+      })
       .finally(() => setCargandoItems(false));
   }, [estado, ventaIdActual]);
 
@@ -50,8 +64,18 @@ export function useRefund(devolucionPort: IDevolucionPort) {
       setDevolucion(result);
       actualizarRecibo(ventaIdActual);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al procesar la devolución';
-      setError({ codigo: 'DEVOLUCION_FALLIDA', mensaje: `No se pudo procesar la devolución: ${msg}` });
+      if (err instanceof PosApiError) {
+        setError({
+          codigo: err.codigo,
+          mensaje: mensajeErrorApi(err.codigo, err.message),
+        });
+      } else {
+        const msg = err instanceof Error ? err.message : 'Error al procesar la devolución';
+        setError({
+          codigo: 'DEVOLUCION_FALLIDA',
+          mensaje: mensajeErrorApi('DEVOLUCION_FALLIDA', msg),
+        });
+      }
     } finally {
       setProcesando(false);
     }

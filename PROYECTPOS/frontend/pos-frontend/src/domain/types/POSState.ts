@@ -70,6 +70,19 @@ export interface ResumenVentaHistorial {
   estado?: string;           // 'COMPLETADA' | 'DEVUELTA' | 'PARCIAL'
   montoDevuelto?: number;    // monto devuelto al cliente (con IVA)
   totalNeto?: number;        // total - montoDevuelto
+  subtotal?: number;
+  iva?: number;
+  montoPagado?: number;
+  cambio?: number;
+  cajero?: string;
+  metodoPago?: string;
+  items?: Array<{
+    productoId: number;
+    nombre: string;
+    cantidad: number;
+    precioUnitario: number;
+    subtotal: number;
+  }>;
 }
 
 export interface Devolucion {

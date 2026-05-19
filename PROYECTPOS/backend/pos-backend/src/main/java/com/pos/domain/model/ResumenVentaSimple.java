@@ -1,15 +1,32 @@
 package com.pos.domain.model;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Value Object para el historial de ventas (SPEC-BE-006).
- * Contiene solo los campos necesarios para la lista — sin ítems detallados.
+ * Incluye detalles de ítems para reconstruir facturas en el frontend.
  */
 public record ResumenVentaSimple(
         String ventaId,
         Instant fechaHora,
         Dinero total,
+        Dinero montoDevuelto,
         int cantidadItems,
-        EstadoVenta estado
-) {}
+        EstadoVenta estado,
+        Dinero subtotal,
+        Dinero iva,
+        Dinero montoPagado,
+        Dinero cambio,
+        String usuarioCajero,
+        String metodoPago,
+        List<ItemVentaDTO> items
+) {
+    public record ItemVentaDTO(
+            Long productoId,
+            String nombre,
+            int cantidad,
+            long precioUnitario,
+            long subtotal
+    ) {}
+}

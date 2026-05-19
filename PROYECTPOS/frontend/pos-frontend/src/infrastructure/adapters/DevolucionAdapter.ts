@@ -1,6 +1,7 @@
 import type { IDevolucionPort, ItemDevolucionRequest } from '@domain/ports/IDevolucionPort';
 import type { Devolucion, ItemDevolucion } from '@domain/types/POSState';
 import { httpFetch } from './httpClient';
+import { toPosApiError } from './toPosApiError';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -8,7 +9,7 @@ export class DevolucionAdapter implements IDevolucionPort {
   /** Obtiene los ítems de una venta para mostrarlos en el panel de devolución */
   async obtenerItems(ventaId: string): Promise<ItemDevolucion[]> {
     const res = await httpFetch(`${API_BASE}/ventas/${ventaId}`);
-    if (!res.ok) throw new Error('VENTA_NO_ENCONTRADA');
+    if (!res.ok) throw await toPosApiError(res);
     const json = await res.json() as {
       data: {
         items: Array<{
@@ -37,8 +38,7 @@ export class DevolucionAdapter implements IDevolucionPort {
       body: JSON.stringify({ items }),
     });
     if (!res.ok) {
-      const err = await res.json() as { error: { codigo: string } };
-      throw new Error(err.error?.codigo ?? 'DEVOLUCION_FALLIDA');
+      throw await toPosApiError(res);
     }
     const json = await res.json() as {
       data: { ventaId: string; montoDevuelto: number; estado: string };

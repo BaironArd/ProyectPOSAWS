@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 /** Genera un UUID v4 simple para idempotencia */
 function generarIdempotencyKey(): string {
@@ -87,8 +89,18 @@ export function usePayment(ventaPort: IVentaPort) {
         throw new Error('CONFIRMACION_FALLIDA');
       }
     } catch (err) {
-      const mensaje = err instanceof Error ? err.message : 'Error al confirmar la venta';
-      setError({ codigo: 'CONFIRMACION_FALLIDA', mensaje: `No se pudo confirmar la venta: ${mensaje}` });
+      if (err instanceof PosApiError) {
+        setError({
+          codigo: err.codigo,
+          mensaje: mensajeErrorApi(err.codigo, err.message),
+        });
+      } else {
+        const mensaje = err instanceof Error ? err.message : 'Error al confirmar la venta';
+        setError({
+          codigo: 'CONFIRMACION_FALLIDA',
+          mensaje: mensajeErrorApi('CONFIRMACION_FALLIDA', mensaje),
+        });
+      }
     } finally {
       setProcesando(false);
     }

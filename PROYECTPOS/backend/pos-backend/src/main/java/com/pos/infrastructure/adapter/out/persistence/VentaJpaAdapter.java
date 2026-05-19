@@ -4,6 +4,7 @@ import com.pos.domain.model.*;
 import com.pos.domain.port.out.VentaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -42,6 +43,7 @@ public class VentaJpaAdapter implements VentaRepository {
         existente.setSubtotal(venta.getResumen().subtotal().toPesos());
         existente.setIva(venta.getResumen().iva().toPesos());
         existente.setTotal(venta.getResumen().total().toPesos());
+        existente.setMontoDevuelto(venta.getMontoDevuelto() != null ? venta.getMontoDevuelto().toPesos() : 0L);
         existente.setMontoPagado(venta.getResumen().montoPagado().toPesos());
         existente.setCambio(venta.getResumen().cambio().toPesos());
         existente.setEstado(VentaEntity.EstadoVentaEnum.valueOf(venta.getEstado().name()));
@@ -79,6 +81,12 @@ public class VentaJpaAdapter implements VentaRepository {
 
     @Override
     public PageResponse<ResumenVentaSimple> findAll(int page, int size) {
+        if (size <= 0) {
+            List<VentaEntity> allResults = jpaRepository.findAllByOrderByFechaHoraDesc();
+            List<ResumenVentaSimple> items = allResults.stream().map(mapper::toResumenSimple).toList();
+            return PageResponse.of(items, items.size(), 0, 0);
+        }
+
         Page<VentaEntity> pageResult = jpaRepository.findAllByOrderByFechaHoraDesc(
                 PageRequest.of(page, size));
         List<ResumenVentaSimple> items = pageResult.getContent()
@@ -96,6 +104,12 @@ public class VentaJpaAdapter implements VentaRepository {
                 .atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
         java.time.Instant hasta = java.time.LocalDate.parse(fechaHasta)
                 .plusDays(1).atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+
+        if (size <= 0) {
+            List<VentaEntity> allResults = jpaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(desde, hasta);
+            List<ResumenVentaSimple> items = allResults.stream().map(mapper::toResumenSimple).toList();
+            return PageResponse.of(items, items.size(), 0, 0);
+        }
 
         Page<VentaEntity> pageResult = jpaRepository.findByFechaHoraBetweenOrderByFechaHoraDesc(
                 desde, hasta, PageRequest.of(page, size));

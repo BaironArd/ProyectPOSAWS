@@ -95,6 +95,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of("PRODUCTO_DUPLICADO", ex.getMessage()));
     }
 
+    @ExceptionHandler(ReporteValidacionException.class)
+    public ResponseEntity<ErrorResponse> handle(ReporteValidacionException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of("VALIDACION_FALLIDA", ex.getMessage()));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String mensaje = ex.getBindingResult().getFieldErrors().stream()

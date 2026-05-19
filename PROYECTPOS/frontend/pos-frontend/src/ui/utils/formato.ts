@@ -11,11 +11,11 @@ export function formatearPrecio(valor: number): string {
  * Ejemplo: "2025-01-15T10:30:00Z" → "15/01/2025 10:30"
  */
 export function formatearFecha(iso: string): string {
-  const fecha = new Date(iso);
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const anio = fecha.getFullYear();
-  const hora = String(fecha.getHours()).padStart(2, '0');
-  const min = String(fecha.getMinutes()).padStart(2, '0');
-  return `${dia}/${mes}/${anio} ${hora}:${min}`;
+  return new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso));
 }

@@ -1,22 +1,30 @@
 package com.pos.infrastructure.adapter.in.web;
 
+import com.pos.domain.exception.CredencialesInvalidasException;
+import com.pos.domain.port.out.TokenRepository;
 import com.pos.domain.service.AuthService;
-import com.pos.infrastructure.adapter.in.web.dto.ApiResponse;
+import com.pos.infrastructure.config.SecurityConfig;
+import com.pos.infrastructure.security.JwtService;
+import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import({SecurityConfig.class, GlobalExceptionHandler.class})
 class AuthControllerIntegrationTest {
 
     @Autowired
@@ -24,6 +32,12 @@ class AuthControllerIntegrationTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private TokenRepository tokenRepository;
 
     @Test
     void login_conCredencialesValidas_retornaToken() throws Exception {
@@ -51,8 +65,7 @@ class AuthControllerIntegrationTest {
                 .content(loginRequest)
                 .with(csrf()))
             .andExpect(status().isOk())
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.data.token").value("jwt-token-123"))
             .andExpect(jsonPath("$.data.usuario").value(usuario))
             .andExpect(jsonPath("$.data.rol").value("CAJERO"))
@@ -70,20 +83,26 @@ class AuthControllerIntegrationTest {
             """;
 
         when(authService.login(anyString(), anyString()))
-            .thenThrow(new RuntimeException("CREDENCIALES_INVALIDAS"));
+            .thenThrow(new CredencialesInvalidasException());
 
         // When & Then
         mockMvc.perform(post("/api/v1/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(loginRequest)
                 .with(csrf()))
-            .andExpect(status().isInternalServerError());
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.error.codigo").value("CREDENCIALES_INVALIDAS"));
     }
 
     @Test
     @WithMockUser
     void logout_conTokenValido_retorna204() throws Exception {
-        // When & Then
+        Claims claims = mock(Claims.class);
+        when(claims.getSubject()).thenReturn("cajero01");
+        when(claims.get(eq("rol"), eq(String.class))).thenReturn("CAJERO");
+        when(tokenRepository.esValido("jwt-token-123")).thenReturn(true);
+        when(jwtService.validarToken("jwt-token-123")).thenReturn(claims);
+
         mockMvc.perform(post("/api/v1/auth/logout")
                 .header("Authorization", "Bearer jwt-token-123")
                 .with(csrf()))

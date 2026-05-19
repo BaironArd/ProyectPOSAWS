@@ -38,13 +38,13 @@ class ProductoServiceTest {
 
     @Test
     void buscar_conQueryValida_delegaAlRepositorio() {
-        when(productoRepository.buscarPorNombre("mo"))
+        when(productoRepository.buscarPorNombreOCodigo("mo"))
                 .thenReturn(List.of(productoMock(1L, "Mouse")));
 
         List<Producto> resultado = productoService.buscar("mo");
 
         assertThat(resultado).hasSize(1);
-        verify(productoRepository).buscarPorNombre("mo");
+        verify(productoRepository).buscarPorNombreOCodigo("mo");
     }
 
     @Test
@@ -69,7 +69,7 @@ class ProductoServiceTest {
 
     @Test
     void buscar_sinResultados_retornaListaVacia() {
-        when(productoRepository.buscarPorNombre("xyz")).thenReturn(List.of());
+        when(productoRepository.buscarPorNombreOCodigo("xyz")).thenReturn(List.of());
 
         List<Producto> resultado = productoService.buscar("xyz");
 

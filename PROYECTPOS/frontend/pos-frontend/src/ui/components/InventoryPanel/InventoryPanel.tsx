@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import { useInventory } from '@application/hooks/useInventory';
 import type { IInventarioPort, NuevoProducto } from '@domain/ports/IInventarioPort';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 import { formatearPrecio } from '@ui/utils/formato';
 import styles from './InventoryPanel.module.css';
 
@@ -36,7 +38,9 @@ export function InventoryPanel({ inventarioPort }: Props) {
       setForm(VACIO);
       setEditId(null);
     } catch (err) {
-      setErrorForm(err instanceof Error ? err.message : 'Error al guardar');
+      setErrorForm(
+        err instanceof PosApiError ? mensajeErrorApi(err.codigo, err.message) : err instanceof Error ? err.message : 'Error al guardar'
+      );
     }
   }
 

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface VentaJpaRepository extends JpaRepository<VentaEntity, String> {
@@ -14,8 +15,10 @@ public interface VentaJpaRepository extends JpaRepository<VentaEntity, String> {
     Optional<VentaEntity> findByIdempotencyKey(String idempotencyKey);
 
     Page<VentaEntity> findAllByOrderByFechaHoraDesc(Pageable pageable);
+    List<VentaEntity> findAllByOrderByFechaHoraDesc();
 
     Page<VentaEntity> findByFechaHoraBetweenOrderByFechaHoraDesc(Instant desde, Instant hasta, Pageable pageable);
+    List<VentaEntity> findByFechaHoraBetweenOrderByFechaHoraDesc(Instant desde, Instant hasta);
 
     // Queries compatibles con H2 y PostgreSQL usando Instant range
 

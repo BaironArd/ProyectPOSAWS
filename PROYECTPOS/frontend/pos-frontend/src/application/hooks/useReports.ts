@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IReportePort } from '@domain/ports/IReportePort';
 import type { ReporteCierre } from '@domain/types/POSState';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 export function useReports(reportePort: IReportePort) {
   const [reporte, setReporte] = useState<ReporteCierre | null>(null);
@@ -13,8 +15,18 @@ export function useReports(reportePort: IReportePort) {
     try {
       const r = await reportePort.generarCierre(fechaDesde, fechaHasta);
       setReporte(r);
-    } catch {
-      setError({ codigo: 'REPORTE_ERROR', mensaje: 'No se pudo generar el reporte.' });
+    } catch (err) {
+      if (err instanceof PosApiError) {
+        setError({
+          codigo: err.codigo,
+          mensaje: mensajeErrorApi(err.codigo, err.message),
+        });
+      } else {
+        setError({
+          codigo: 'REPORTE_ERROR',
+          mensaje: mensajeErrorApi('REPORTE_ERROR', 'Sin detalle'),
+        });
+      }
     } finally {
       setCargando(false);
     }

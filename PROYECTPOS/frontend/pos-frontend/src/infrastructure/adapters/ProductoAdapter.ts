@@ -1,6 +1,7 @@
 import type { IProductoPort } from '@domain/ports/IProductoPort';
 import type { Producto } from '@domain/types/POSState';
 import { httpFetch } from './httpClient';
+import { toPosApiError } from './toPosApiError';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -9,7 +10,7 @@ export class ProductoAdapter implements IProductoPort {
     const res = await httpFetch(
       `${API_BASE}/productos?q=${encodeURIComponent(query)}`
     );
-    if (!res.ok) throw new Error('LOAD_FAILED');
+    if (!res.ok) throw await toPosApiError(res);
     const data = await res.json() as { data: Producto[] };
     return data.data;
   }

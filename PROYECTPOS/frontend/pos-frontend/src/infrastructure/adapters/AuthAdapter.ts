@@ -1,6 +1,7 @@
 import type { IAuthPort } from '@domain/ports/IAuthPort';
 import type { Sesion } from '@domain/types/POSState';
 import { httpFetch } from './httpClient';
+import { toPosApiError } from './toPosApiError';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -10,7 +11,7 @@ export class AuthAdapter implements IAuthPort {
       method: 'POST',
       body: JSON.stringify({ usuario, contrasena }),
     });
-    if (!res.ok) throw new Error('CREDENCIALES_INVALIDAS');
+    if (!res.ok) throw await toPosApiError(res);
     const data = await res.json() as { data: { token: string; usuario: string; rol: string } };
     // Token almacenado en memoria via el store — NUNCA en localStorage (SPEC-009)
     return {

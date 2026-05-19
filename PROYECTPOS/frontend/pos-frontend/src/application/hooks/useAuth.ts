@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IAuthPort } from '@domain/ports/IAuthPort';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 export function useAuth(authPort: IAuthPort) {
   const [cargando, setCargando] = useState(false);
@@ -16,8 +18,12 @@ export function useAuth(authPort: IAuthPort) {
     try {
       const sesionData = await authPort.login(usuario, contrasena);
       loginStore(sesionData);
-    } catch {
-      setErrorLogin('Usuario o contraseña incorrectos');
+    } catch (err) {
+      if (err instanceof PosApiError) {
+        setErrorLogin(mensajeErrorApi(err.codigo, err.message));
+      } else {
+        setErrorLogin(mensajeErrorApi('CREDENCIALES_INVALIDAS', 'Sin detalle'));
+      }
     } finally {
       setCargando(false);
     }

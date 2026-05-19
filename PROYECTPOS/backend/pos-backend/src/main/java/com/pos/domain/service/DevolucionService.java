@@ -42,10 +42,13 @@ public class DevolucionService implements DevolverVentaUseCase {
                 .map(i -> new ItemDevolucionCommand(i.getProductoId(), i.getCantidad()))
                 .toList();
 
-        restaurarStock(todosLosItems, venta);
+        restaurarStock(todosLosItems);
 
         venta.getItems().clear();
         venta.setResumen(calculadora.calcular(venta.getItems(), venta.getResumen().montoPagado()));
+        // Actualizar monto devuelto acumulado
+        Dinero previo = venta.getMontoDevuelto() != null ? venta.getMontoDevuelto() : Dinero.CERO;
+        venta.setMontoDevuelto(previo.mas(montoDevuelto));
         venta.setEstado(EstadoVenta.DEVUELTA);
         ventaRepository.save(venta);
 
@@ -56,20 +59,30 @@ public class DevolucionService implements DevolverVentaUseCase {
     @Override
     public Devolucion devolverParcial(String ventaId, List<ItemDevolucionCommand> itemsADevolver) {
         Venta venta = cargarVentaDevolvible(ventaId);
-
-        Map<Long, ItemVenta> itemsVenta = venta.getItems().stream()
-                .collect(Collectors.toMap(ItemVenta::getProductoId, i -> i));
+        Map<Long, ItemVenta> itemsVentaOriginal = venta.getItems().stream()
+            .collect(Collectors.toMap(ItemVenta::getProductoId, i -> i));
 
         Dinero subtotalDevuelto = Dinero.CERO;
+        List<ItemDevolucionCommand> itemsParaRestaurar = new java.util.ArrayList<>();
+
+        // Fase 1: montos y cantidades contra las cantidades vigentes en la venta; sin mutar aún
         for (ItemDevolucionCommand cmd : itemsADevolver) {
-            ItemVenta itemOriginal = itemsVenta.get(cmd.productoId());
+            ItemVenta itemOriginal = itemsVentaOriginal.get(cmd.productoId());
             if (itemOriginal == null) continue;
             int cantidadReal = Math.min(cmd.cantidad(), itemOriginal.getCantidad());
             if (cantidadReal <= 0) continue;
 
             Dinero subtotalItem = itemOriginal.getPrecioUnitario().por(cantidadReal);
             subtotalDevuelto = subtotalDevuelto.mas(subtotalItem);
+            itemsParaRestaurar.add(new ItemDevolucionCommand(cmd.productoId(), cantidadReal));
+        }
 
+        restaurarStock(itemsParaRestaurar);
+
+        // Fase 2: mismo orden que la fase 1 para aplicar las reducciones sobre la venta
+        for (ItemDevolucionCommand cmd : itemsParaRestaurar) {
+            ItemVenta itemOriginal = itemsVentaOriginal.get(cmd.productoId());
+            int cantidadReal = cmd.cantidad();
             itemOriginal.setCantidad(itemOriginal.getCantidad() - cantidadReal);
             itemOriginal.setSubtotal(itemOriginal.getPrecioUnitario().por(itemOriginal.getCantidad()));
         }
@@ -78,13 +91,14 @@ public class DevolucionService implements DevolverVentaUseCase {
         Dinero ivaDevuelto = subtotalDevuelto.iva();
         Dinero montoDevuelto = subtotalDevuelto.mas(ivaDevuelto);
 
-        restaurarStock(itemsADevolver, venta);
-
         venta.setResumen(calculadora.calcular(venta.getItems(), venta.getResumen().montoPagado()));
         EstadoVenta estadoFinal = venta.getItems().isEmpty()
-                ? EstadoVenta.DEVUELTA
-                : EstadoVenta.PARCIALMENTE_DEVUELTA;
+            ? EstadoVenta.DEVUELTA
+            : EstadoVenta.PARCIALMENTE_DEVUELTA;
         venta.setEstado(estadoFinal);
+        // Actualizar monto devuelto acumulado
+        Dinero previo = venta.getMontoDevuelto() != null ? venta.getMontoDevuelto() : Dinero.CERO;
+        venta.setMontoDevuelto(previo.mas(montoDevuelto));
         ventaRepository.save(venta);
 
         return new Devolucion(ventaId, montoDevuelto, Instant.now(), estadoFinal == EstadoVenta.DEVUELTA ? "DEVUELTA" : "PARCIAL");
@@ -106,18 +120,12 @@ public class DevolucionService implements DevolverVentaUseCase {
         return venta;
     }
 
-    private void restaurarStock(List<ItemDevolucionCommand> items, Venta venta) {
-        Map<Long, ItemVenta> itemsVenta = venta.getItems().stream()
-                .collect(Collectors.toMap(ItemVenta::getProductoId, i -> i));
-
+    private void restaurarStock(List<ItemDevolucionCommand> items) {
         for (ItemDevolucionCommand cmd : items) {
-            ItemVenta itemOriginal = itemsVenta.get(cmd.productoId());
-            if (itemOriginal == null) continue;
-
-            final int cantidadReal = Math.min(cmd.cantidad(), itemOriginal.getCantidad());
+            final int cantidadReal = Math.max(0, cmd.cantidad());
             if (cantidadReal <= 0) continue;
 
-            // Cargar, modificar y guardar explícitamente — sin lambda que pueda tragarse errores
+            // Cargar, modificar y guardar explícitamente — no dependemos de la venta
             Producto producto = productoRepository.findById(cmd.productoId())
                     .orElse(null);
             if (producto == null) continue;

@@ -25,6 +25,9 @@ public class VentaEntity {
     @Column(nullable = false)
     private long total;
 
+    @Column(name = "monto_devuelto", nullable = false)
+    private long montoDevuelto;
+
     @Column(nullable = false)
     private long montoPagado;
 
@@ -84,4 +87,7 @@ public class VentaEntity {
 
     public String getMetodoPago() { return metodoPago; }
     public void setMetodoPago(String metodoPago) { this.metodoPago = metodoPago; }
+
+    public long getMontoDevuelto() { return montoDevuelto; }
+    public void setMontoDevuelto(long montoDevuelto) { this.montoDevuelto = montoDevuelto; }
 }

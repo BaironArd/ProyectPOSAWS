@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IInventarioPort, NuevoProducto } from '@domain/ports/IInventarioPort';
 import type { Producto } from '@domain/types/POSState';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 export function useInventory(inventarioPort: IInventarioPort) {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -19,7 +21,19 @@ export function useInventory(inventarioPort: IInventarioPort) {
     setCargando(true);
     inventarioPort.listar()
       .then(setProductos)
-      .catch(() => setError({ codigo: 'INVENTARIO_ERROR', mensaje: 'No se pudo cargar el inventario.' }))
+      .catch((err) => {
+        if (err instanceof PosApiError) {
+          setError({
+            codigo: err.codigo,
+            mensaje: mensajeErrorApi(err.codigo, err.message),
+          });
+        } else {
+          setError({
+            codigo: 'INVENTARIO_ERROR',
+            mensaje: mensajeErrorApi('INVENTARIO_ERROR', 'Sin detalle'),
+          });
+        }
+      })
       .finally(() => setCargando(false));
   }, [estado, sesion, inventarioPort, setError]);
 

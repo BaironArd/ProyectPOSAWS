@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IProductoPort } from '@domain/ports/IProductoPort';
+import { PosApiError } from '@domain/errors/PosApiError';
+import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 const DEBOUNCE_MS = 300;
 const MIN_CHARS = 2;
@@ -28,11 +30,18 @@ export function useSearch(productoPort: IProductoPort) {
         const productos = await productoPort.buscar(query);
         setProductos(productos);
         setEstado('RESULTADOS');
-      } catch {
-        setError({
-          codigo: 'LOAD_FAILED',
-          mensaje: 'No se pudieron cargar los productos. Intenta nuevamente.',
-        });
+      } catch (err) {
+        if (err instanceof PosApiError) {
+          setError({
+            codigo: err.codigo,
+            mensaje: mensajeErrorApi(err.codigo, err.message),
+          });
+        } else {
+          setError({
+            codigo: 'LOAD_FAILED',
+            mensaje: mensajeErrorApi('LOAD_FAILED', 'Sin detalle'),
+          });
+        }
       }
     }, DEBOUNCE_MS);
 

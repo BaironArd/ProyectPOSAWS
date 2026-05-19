@@ -113,14 +113,42 @@ docker-compose up -d
 ### Sin Docker (Desarrollo)
 
 ```bash
-# Backend
+# Backend (Windows)
+cd PROYECTPOS\backend\pos-backend
+./mvnw.cmd spring-boot:run
+
+# Backend (Unix/macOS)
 cd PROYECTPOS/backend/pos-backend
-mvn spring-boot:run
+./mvnw spring-boot:run
 
 # Frontend (nueva terminal)
 cd PROYECTPOS/frontend/pos-frontend
 npm install
 npm run dev
+```
+
+Nota: en desarrollo el backend arranca con H2 por defecto (archivo `data/posdb`); si prefieres PostgreSQL, configura las variables en `.env`.
+
+## Notas sobre Devoluciones
+
+- Endpoint: `POST /api/v1/ventas/{ventaId}/devolucion`
+- Se soportan devoluciones totales (sin body) y parciales (envía JSON con `items`).
+- Corrección aplicada: el backend ahora acepta cuerpos vacíos y maneja también `application/x-www-form-urlencoded` para evitar errores 415 cuando el cliente no envía `application/json`.
+- Ejemplo (devolución total):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/ventas/VNT-20260518-001/devolucion \
+   -H "Authorization: Bearer <TOKEN>" \
+   -H "Content-Type: application/json"
+```
+
+Ejemplo (devolución parcial):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/ventas/VNT-20260518-001/devolucion \
+   -H "Authorization: Bearer <TOKEN>" \
+   -H "Content-Type: application/json" \
+   -d '{"items":[{"productoId":1,"cantidad":1}]}'
 ```
 
 ---

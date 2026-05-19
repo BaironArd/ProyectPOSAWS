@@ -11,6 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.io.IOException;
+import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/ventas")
@@ -55,51 +59,112 @@ public class VentaController {
             @RequestParam(required = false) String fechaDesde,
             @RequestParam(required = false) String fechaHasta) {
         var resultado = listarVentas.listar(page, size, fechaDesde, fechaHasta);
-        // Mapear a DTO con total como long (no como objeto Dinero)
+        // Mapear a DTO con todos los datos necesarios para factura desde el historial
         var items = resultado.items().stream()
                 .map(r -> new VentaResumenResponse(
                         r.ventaId(),
                         r.fechaHora().toString(),
                         r.total().toPesos(),
+                        r.montoDevuelto().toPesos(),
                         r.cantidadItems(),
-                        r.estado().name()))
+                        r.estado().name(),
+                        r.subtotal().toPesos(),
+                        r.iva().toPesos(),
+                        r.montoPagado().toPesos(),
+                        r.cambio().toPesos(),
+                        r.usuarioCajero(),
+                        r.metodoPago(),
+                        r.items().stream()
+                                .map(i -> new VentaItemResumenResponse(
+                                        i.productoId(),
+                                        i.nombre(),
+                                        i.cantidad(),
+                                        i.precioUnitario(),
+                                        i.subtotal()))
+                                .toList()
+                ))
                 .toList();
         var pageDto = new com.pos.domain.model.PageResponse<>(
                 items, resultado.total(), resultado.page(), resultado.size(), resultado.totalPages());
         return ResponseEntity.ok(ApiResponse.of(pageDto));
     }
 
+    public record VentaItemResumenResponse(
+            Long productoId,
+            String nombre,
+            int cantidad,
+            long precioUnitario,
+            long subtotal
+    ) {}
+
     public record VentaResumenResponse(
             String ventaId,
             String fechaHora,
             long total,
+            long montoDevuelto,
             int cantidadItems,
-            String estado
+            String estado,
+            long subtotal,
+            long iva,
+            long montoPagado,
+            long cambio,
+            String cajero,
+            String metodoPago,
+            List<VentaItemResumenResponse> items
     ) {}
+        @PostMapping("/{ventaId}/devolucion")
+        @Transactional
+        public ResponseEntity<ApiResponse<DevolucionResponse>> devolver(
+                        @PathVariable String ventaId,
+                        HttpServletRequest httpRequest) {
 
-    @PostMapping("/{ventaId}/devolucion")
-    @Transactional
-    public ResponseEntity<ApiResponse<DevolucionResponse>> devolver(
-            @PathVariable String ventaId,
-            @RequestBody(required = false) DevolucionRequest request) {
+                DevolucionRequest request = null;
+                try {
+                        request = readDevolucionRequest(httpRequest);
+                } catch (IOException e) {
+                        throw new RuntimeException("Invalid request payload for devolucion", e);
+                }
 
-        Devolucion devolucion;
-        if (request != null && request.items() != null && !request.items().isEmpty()) {
-            List<DevolverVentaUseCase.ItemDevolucionCommand> cmds = request.items().stream()
-                    .map(i -> new DevolverVentaUseCase.ItemDevolucionCommand(i.productoId(), i.cantidad()))
-                    .toList();
-            devolucion = devolverVenta.devolverParcial(ventaId, cmds);
-        } else {
-            devolucion = devolverVenta.devolver(ventaId);
+                Devolucion devolucion;
+                if (request != null && request.items() != null && !request.items().isEmpty()) {
+                        List<DevolverVentaUseCase.ItemDevolucionCommand> cmds = request.items().stream()
+                                        .map(i -> new DevolverVentaUseCase.ItemDevolucionCommand(i.productoId(), i.cantidad()))
+                                        .toList();
+                        devolucion = devolverVenta.devolverParcial(ventaId, cmds);
+                } else {
+                        devolucion = devolverVenta.devolver(ventaId);
+                }
+
+                return ResponseEntity.ok(ApiResponse.of(new DevolucionResponse(
+                                devolucion.getVentaId(),
+                                devolucion.getMontoDevuelto().toPesos(),
+                                devolucion.getEstado(),
+                                devolucion.getFechaDevolucion()
+                )));
         }
 
-        return ResponseEntity.ok(ApiResponse.of(new DevolucionResponse(
-                devolucion.getVentaId(),
-                devolucion.getMontoDevuelto().toPesos(),
-                devolucion.getEstado(),
-                devolucion.getFechaDevolucion()
-        )));
-    }
+        private DevolucionRequest readDevolucionRequest(HttpServletRequest req) throws IOException {
+                String contentType = req.getContentType();
+                int contentLength = req.getContentLength();
+
+                // No body => treat as null (devolución total)
+                if (contentLength <= 0) return null;
+
+                // Handle form submissions gracefully: if no 'items' parameter, treat as null
+                if (contentType != null && contentType.contains("application/x-www-form-urlencoded")) {
+                        String itemsParam = req.getParameter("items");
+                        if (itemsParam == null || itemsParam.isBlank()) return null;
+                        ObjectMapper mapper = new ObjectMapper();
+                        String json = "{\"items\":" + itemsParam + "}";
+                        return mapper.readValue(json, DevolucionRequest.class);
+                }
+
+                // Default: try to parse JSON body
+                String body = req.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+                if (body == null || body.isBlank()) return null;
+                ObjectMapper mapper = new ObjectMapper();
+                return mapper.readValue(body, DevolucionRequest.class);
+        }
 
     public record DevolucionRequest(List<DevolucionItemRequest> items) {}
     public record DevolucionItemRequest(Long productoId, int cantidad) {}

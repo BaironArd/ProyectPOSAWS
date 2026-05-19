@@ -1,6 +1,7 @@
 import type { IReportePort } from '@domain/ports/IReportePort';
 import type { ReporteCierre } from '@domain/types/POSState';
 import { httpFetch } from './httpClient';
+import { toPosApiError } from './toPosApiError';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
@@ -9,7 +10,7 @@ export class ReporteAdapter implements IReportePort {
     const res = await httpFetch(
       `${API_BASE}/reportes/cierre?fechaDesde=${fechaDesde}&fechaHasta=${fechaHasta}`
     );
-    if (!res.ok) throw new Error('REPORTE_ERROR');
+    if (!res.ok) throw await toPosApiError(res);
     const json = await res.json() as { data: ReporteCierre };
     return json.data;
   }
