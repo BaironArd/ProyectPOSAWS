@@ -118,3 +118,9 @@ target/
 
 # Local development
 postgres_data/
+
+# Runtime database files
+**/data/*.mv.db
+**/data/*.trace.db
+**/data/*.lock.db
+**/data/*.h2.db
