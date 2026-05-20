@@ -1,6 +1,5 @@
 package com.pos.infrastructure.adapter.in.web;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pos.domain.exception.*;
 import com.pos.domain.model.*;
 import com.pos.domain.port.in.*;
@@ -29,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class VentaControllerTest {
 
     @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
 
     @MockBean private ConfirmarVentaUseCase confirmarVenta;
     @MockBean private ObtenerVentaUseCase obtenerVenta;
