@@ -32,13 +32,13 @@ public interface VentaJpaRepository extends JpaRepository<VentaEntity, String> {
            "AND v.fechaHora >= :desde AND v.fechaHora < :hasta")
     Long sumTotalEnRango(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 
-    /** Cantidad de ventas devueltas en el rango */
-    @Query("SELECT COUNT(v) FROM VentaEntity v WHERE v.estado = 'DEVUELTA' " +
+    /** Cantidad de ventas con devoluciones (completas o parciales) en el rango */
+    @Query("SELECT COUNT(v) FROM VentaEntity v WHERE v.montoDevuelto > 0 " +
            "AND v.fechaHora >= :desde AND v.fechaHora < :hasta")
     int countDevueltasEnRango(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 
-    /** Suma del monto de las ventas devueltas (monto a reembolsar = total de esas ventas) */
-    @Query("SELECT SUM(v.total) FROM VentaEntity v WHERE v.estado = 'DEVUELTA' " +
+    /** Suma del monto devuelto acumulado (montoDevuelto en cada venta, incluyendo parciales) */
+    @Query("SELECT SUM(v.montoDevuelto) FROM VentaEntity v WHERE v.montoDevuelto > 0 " +
            "AND v.fechaHora >= :desde AND v.fechaHora < :hasta")
     Long sumDevueltasEnRango(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 }
