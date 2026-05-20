@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@SuppressWarnings("null")
 public class ProductoJpaAdapter implements ProductoRepository {
 
     private final ProductoJpaRepository jpaRepository;

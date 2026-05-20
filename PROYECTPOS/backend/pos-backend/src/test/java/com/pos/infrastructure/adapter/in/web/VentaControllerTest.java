@@ -25,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(VentaController.class)
 @Import(GlobalExceptionHandler.class)
+@SuppressWarnings("null")
 class VentaControllerTest {
 
     @Autowired private MockMvc mockMvc;
