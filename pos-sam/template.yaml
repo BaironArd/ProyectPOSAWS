@@ -1,0 +1,244 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  pos-sam
+  POS Serverless - 2 Lambdas Java 21, 2 tablas DynamoDB, 1 API Gateway REST
+  Stack: pos-sam | Region: us-east-1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Globals
+# ─────────────────────────────────────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: java21
+    Architectures:
+      - x86_64
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        PRODUCTOS_TABLE: !Ref ProductosTable
+        VENTAS_TABLE:    !Ref VentasTable
+        AWS_REGION_NAME: !Ref AWS::Region
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Resources
+# ─────────────────────────────────────────────────────────────────────────────
+Resources:
+
+  # ── API Gateway REST ────────────────────────────────────────────────────────
+  PosApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: pos-sam-api
+      StageName: Prod
+      Description: "API Gateway POS Serverless - 14 endpoints"
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin:  "'*'"
+
+  # ── Lambda 1: GetProductsFunction ───────────────────────────────────────────
+  GetProductsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pos-sam-get-products
+      Description: "Consulta productos del POS desde DynamoDB (id, code, name, all)"
+      CodeUri: get-products/
+      Handler: com.pos.sam.products.handler.GetProductsHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ProductosTable
+      Events:
+        # Endpoint 1: GET /api/v1/products
+        GetAllProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/products
+            Method: GET
+        # Endpoint 2: GET /api/v1/products/{id}
+        GetProductById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/products/{id}
+            Method: GET
+        # Endpoint 3: OPTIONS /api/v1/products (CORS preflight)
+        ProductsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/products
+            Method: OPTIONS
+        # Endpoint 4: OPTIONS /api/v1/products/{id} (CORS preflight)
+        ProductByIdOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/products/{id}
+            Method: OPTIONS
+
+  # ── Lambda 2: SaveSaleFunction ──────────────────────────────────────────────
+  SaveSaleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: pos-sam-save-sale
+      Description: "Ventas, pagos y reportes del POS en DynamoDB"
+      CodeUri: save-sale/
+      Handler: com.pos.sam.sales.handler.SaveSaleHandler::handleRequest
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref VentasTable
+      Events:
+        # Endpoint 5: POST /api/v1/sales
+        CreateSale:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/sales
+            Method: POST
+        # Endpoint 6: GET /api/v1/sales
+        ListSales:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/sales
+            Method: GET
+        # Endpoint 7: GET /api/v1/sales/{id}
+        GetSaleById:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/sales/{id}
+            Method: GET
+        # Endpoint 8: OPTIONS /api/v1/sales (CORS)
+        SalesOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/sales
+            Method: OPTIONS
+        # Endpoint 9: POST /api/v1/payments
+        ProcessPayment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/payments
+            Method: POST
+        # Endpoint 10: GET /api/v1/payments
+        ListPayments:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/payments
+            Method: GET
+        # Endpoint 11: OPTIONS /api/v1/payments (CORS)
+        PaymentsOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/payments
+            Method: OPTIONS
+        # Endpoint 12: GET /api/v1/reports/daily
+        DailyReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/reports/daily
+            Method: GET
+        # Endpoint 13: GET /api/v1/reports/summary
+        SummaryReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/reports/summary
+            Method: GET
+        # Endpoint 14: GET /api/v1/reports/top-products
+        TopProductsReport:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApi
+            Path: /api/v1/reports/top-products
+            Method: GET
+
+  # ── DynamoDB: ProductosTable ────────────────────────────────────────────────
+  ProductosTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ProductosTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: code-index
+          KeySchema:
+            - AttributeName: code
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: pos-sam
+
+  # ── DynamoDB: VentasTable ───────────────────────────────────────────────────
+  VentasTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: VentasTable
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      Tags:
+        - Key: Project
+          Value: pos-sam
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Outputs
+# ─────────────────────────────────────────────────────────────────────────────
+Outputs:
+  ApiBaseUrl:
+    Description: "URL base del API Gateway"
+    Value: !Sub "https://${PosApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  ProductsEndpoint:
+    Description: "GET /api/v1/products"
+    Value: !Sub "https://${PosApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/products"
+
+  SalesEndpoint:
+    Description: "POST /api/v1/sales"
+    Value: !Sub "https://${PosApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/sales"
+
+  PaymentsEndpoint:
+    Description: "POST /api/v1/payments"
+    Value: !Sub "https://${PosApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/payments"
+
+  ReportsEndpoint:
+    Description: "GET /api/v1/reports/*"
+    Value: !Sub "https://${PosApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/api/v1/reports"
+
+  GetProductsFunctionArn:
+    Description: "ARN Lambda GetProductsFunction"
+    Value: !GetAtt GetProductsFunction.Arn
+
+  SaveSaleFunctionArn:
+    Description: "ARN Lambda SaveSaleFunction"
+    Value: !GetAtt SaveSaleFunction.Arn
+
+  ProductosTableArn:
+    Description: "ARN DynamoDB ProductosTable"
+    Value: !GetAtt ProductosTable.Arn
+
+  VentasTableArn:
+    Description: "ARN DynamoDB VentasTable"
+    Value: !GetAtt VentasTable.Arn
