@@ -7,9 +7,13 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name          = "pos-sam"
-region              = "us-east-1"
 confirm_changeset   = true
 capabilities        = "CAPABILITY_IAM"
 resolve_s3          = true
 s3_prefix           = "pos-sam"
 parameter_overrides = ""
+disable_rollback = true
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"
