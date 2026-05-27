@@ -1,0 +1,33 @@
+# Configuración de SAM CLI para despliegue
+# Generado para el proyecto POS Serverless
+
+version = 0.1
+
+# ─────────────────────────────────────────────
+# Entorno: dev (por defecto)
+# ─────────────────────────────────────────────
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name          = "pos-serverless-dev"
+s3_bucket           = ""                    # SAM crea el bucket automáticamente con --resolve-s3
+s3_prefix           = "pos-serverless"
+region              = "us-east-1"           # Cambia a tu región AWS
+confirm_changeset   = true
+capabilities        = "CAPABILITY_IAM"
+parameter_overrides = "Entorno=dev"
+resolve_s3          = true
+
+# ─────────────────────────────────────────────
+# Entorno: prod
+# ─────────────────────────────────────────────
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name          = "pos-serverless-prod"
+s3_prefix           = "pos-serverless"
+region              = "us-east-1"
+confirm_changeset   = true
+capabilities        = "CAPABILITY_IAM"
+parameter_overrides = "Entorno=prod"
+resolve_s3          = true

@@ -1,0 +1,192 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  POS Serverless - Microservicios AWS
+  Arquitectura: API Gateway → Lambda (Productos + Ventas) → DynamoDB
+
+# ─────────────────────────────────────────────
+# Parámetros configurables por entorno
+# ─────────────────────────────────────────────
+Parameters:
+  Entorno:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+    Description: Entorno de despliegue
+
+# ─────────────────────────────────────────────
+# Variables globales compartidas por todas las Lambdas
+# ─────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: java21
+    Architectures:
+      - x86_64
+    MemorySize: 512
+    Timeout: 30
+    Environment:
+      Variables:
+        ENTORNO: !Ref Entorno
+        PRODUCTOS_TABLE_NAME: !Ref TablaProductos
+        VENTAS_TABLE_NAME: !Ref TablaVentas
+        AWS_REGION_NAME: !Ref AWS::Region
+
+# ─────────────────────────────────────────────
+# Recursos
+# ─────────────────────────────────────────────
+Resources:
+
+  # ── API Gateway ──────────────────────────────
+  PosApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "pos-api-${Entorno}"
+      StageName: !Ref Entorno
+      Description: API Gateway del POS Serverless
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # ── Lambda: Microservicio Productos ──────────
+  LambdaProductos:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "pos-productos-${Entorno}"
+      Description: "Microservicio Productos - consulta productos por id, codigo, codigoBarras o nombre"
+      CodeUri: productos-service/
+      Handler: com.pos.aws.productos.handler.ProductosHandler::handleRequest
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TablaProductos
+      Events:
+        # GET /productos?tipo=nombre&q=mouse
+        BuscarProductos:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApiGateway
+            Path: /productos
+            Method: GET
+        # OPTIONS /productos (CORS preflight)
+        ProductosOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApiGateway
+            Path: /productos
+            Method: OPTIONS
+
+  # ── Lambda: Microservicio Ventas ─────────────
+  LambdaVentas:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "pos-ventas-${Entorno}"
+      Description: "Microservicio Ventas - registra ventas del POS en DynamoDB"
+      CodeUri: ventas-service/
+      Handler: com.pos.aws.ventas.handler.VentasHandler::handleRequest
+      Policies:
+        - DynamoDBWritePolicy:
+            TableName: !Ref TablaVentas
+      Events:
+        # POST /ventas
+        RegistrarVenta:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApiGateway
+            Path: /ventas
+            Method: POST
+        # OPTIONS /ventas (CORS preflight)
+        VentasOptions:
+          Type: Api
+          Properties:
+            RestApiId: !Ref PosApiGateway
+            Path: /ventas
+            Method: OPTIONS
+
+  # ── DynamoDB: Tabla Productos ─────────────────
+  TablaProductos:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "Productos-${Entorno}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: codigoBarras
+          AttributeType: S
+        - AttributeName: codigo
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        # GSI para búsqueda por código de barras
+        - IndexName: codigoBarras-index
+          KeySchema:
+            - AttributeName: codigoBarras
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        # GSI para búsqueda por código alfanumérico
+        - IndexName: codigo-index
+          KeySchema:
+            - AttributeName: codigo
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Proyecto
+          Value: POS-Serverless
+        - Key: Entorno
+          Value: !Ref Entorno
+
+  # ── DynamoDB: Tabla Ventas ────────────────────
+  TablaVentas:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "Ventas-${Entorno}"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: ventaId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ventaId
+          KeyType: HASH
+      Tags:
+        - Key: Proyecto
+          Value: POS-Serverless
+        - Key: Entorno
+          Value: !Ref Entorno
+
+# ─────────────────────────────────────────────
+# Outputs — valores útiles post-despliegue
+# ─────────────────────────────────────────────
+Outputs:
+  ApiGatewayUrl:
+    Description: "URL base del API Gateway"
+    Value: !Sub "https://${PosApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Entorno}"
+    Export:
+      Name: !Sub "PosApiUrl-${Entorno}"
+
+  EndpointProductos:
+    Description: "Endpoint GET /productos"
+    Value: !Sub "https://${PosApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Entorno}/productos"
+
+  EndpointVentas:
+    Description: "Endpoint POST /ventas"
+    Value: !Sub "https://${PosApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Entorno}/ventas"
+
+  LambdaProductosArn:
+    Description: "ARN de la Lambda Productos"
+    Value: !GetAtt LambdaProductos.Arn
+
+  LambdaVentasArn:
+    Description: "ARN de la Lambda Ventas"
+    Value: !GetAtt LambdaVentas.Arn
+
+  TablaProductosArn:
+    Description: "ARN de la tabla DynamoDB Productos"
+    Value: !GetAtt TablaProductos.Arn
+
+  TablaVentasArn:
+    Description: "ARN de la tabla DynamoDB Ventas"
+    Value: !GetAtt TablaVentas.Arn
