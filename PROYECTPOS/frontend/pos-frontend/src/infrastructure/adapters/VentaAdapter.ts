@@ -16,8 +16,12 @@ import { API_BASE_URL } from '../../config';
 export class VentaAdapter implements IVentaPort {
   async confirmar(payload: ConfirmarVentaPayload): Promise<ConfirmarVentaResult> {
     const body = {
-      paymentMethod: payload.metodoPago ?? 'CASH',
-      amountPaid:    payload.total,
+      paymentMethod: payload.metodoPago === 'EFECTIVO'        ? 'CASH'
+                   : payload.metodoPago === 'TARJETA_DEBITO'  ? 'CARD'
+                   : payload.metodoPago === 'TARJETA_CREDITO' ? 'CARD'
+                   : payload.metodoPago === 'TRANSFERENCIA'   ? 'TRANSFER'
+                   : 'CASH',
+      amountPaid: payload.montoPagado,
       items: payload.carrito.map(i => ({
         productId:  String(i.productoId),
         name:       i.nombre,
@@ -34,8 +38,8 @@ export class VentaAdapter implements IVentaPort {
 
     if (!res.ok) throw await toPosApiError(res);
 
-    const data = await res.json() as { success: boolean; data: { ventaId: string } };
-    return { ok: true, ventaId: data.data.ventaId };
+    const data = await res.json() as { success: boolean; data: { id: string } };
+    return { ok: true, ventaId: data.data.id };
   }
 }
 

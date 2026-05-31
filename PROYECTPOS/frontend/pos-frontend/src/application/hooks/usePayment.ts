@@ -36,9 +36,21 @@ export function usePayment(ventaPort: IVentaPort) {
     setEstado('PROCESANDO');
 
     try {
+      // Calcular monto real a enviar según método de pago
+      let montoEnviado: number;
+      if (metodoPago === 'EFECTIVO') {
+        montoEnviado = montoPagado;
+      } else if (metodoPago === 'MIXTO') {
+        montoEnviado = pagos.reduce((s, p) => s + p.monto, 0);
+      } else {
+        // débito / crédito / transferencia: cobro exacto
+        montoEnviado = resumen.total;
+      }
+
       const result = await ventaPort.confirmar({
         carrito,
         total: resumen.total,
+        montoPagado: montoEnviado,
         metodoPago,
         pagos,
         idempotencyKey: generarIdempotencyKey(),
@@ -47,19 +59,14 @@ export function usePayment(ventaPort: IVentaPort) {
       if (result.ok) {
         setVentaIdActual(result.ventaId);
 
-        // Calcular monto pagado real y cambio según método
-        let montoPagadoReal: number;
+        // Calcular cambio según método
         let cambioCalculado: number;
-
         if (metodoPago === 'EFECTIVO') {
-          montoPagadoReal = montoPagado;
           cambioCalculado = montoPagado > resumen.total ? montoPagado - resumen.total : 0;
         } else if (metodoPago === 'MIXTO') {
-          montoPagadoReal = pagos.reduce((s, p) => s + p.monto, 0);
-          cambioCalculado = montoPagadoReal > resumen.total ? montoPagadoReal - resumen.total : 0;
+          const sumaMixto = pagos.reduce((s, p) => s + p.monto, 0);
+          cambioCalculado = sumaMixto > resumen.total ? sumaMixto - resumen.total : 0;
         } else {
-          // débito / crédito / transferencia: cobro exacto, sin cambio
-          montoPagadoReal = resumen.total;
           cambioCalculado = 0;
         }
 
@@ -76,7 +83,7 @@ export function usePayment(ventaPort: IVentaPort) {
           iva: resumen.iva,
           total: resumen.total,
           metodoPago: metodoPago ?? 'EFECTIVO',
-          montoPagado: montoPagadoReal,
+          montoPagado: montoEnviado,
           cambio: cambioCalculado,
         };
 

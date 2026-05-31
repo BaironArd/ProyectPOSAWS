@@ -3,6 +3,7 @@ import type { ItemCarrito, PagoItem, MetodoPago } from '../types/POSState';
 export interface ConfirmarVentaPayload {
   carrito: ItemCarrito[];
   total: number;
+  montoPagado: number;
   metodoPago: MetodoPago;
   pagos: PagoItem[];
   idempotencyKey: string;

@@ -9,6 +9,7 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -51,16 +52,23 @@ public class ProductRepository {
                 .collect(Collectors.toList());
     }
 
-    /** Busca por nombre (contains, case-insensitive) usando Scan + filtro en memoria. */
+    /** Busca por nombre (contains, case-insensitive, sin tilde) usando Scan + filtro en memoria. */
     public List<ProductRecord> findByName(String name) {
-        String lower = name.toLowerCase();
-        // Scan completo y filtrado en memoria (case-insensitive)
+        String normalized = normalize(name);
         return table.scan().stream()
                 .flatMap(p -> p.items().stream())
                 .filter(r -> r.getProducto() != null
                         && r.getProducto().getName() != null
-                        && r.getProducto().getName().toLowerCase().contains(lower))
+                        && normalize(r.getProducto().getName()).contains(normalized))
                 .collect(Collectors.toList());
+    }
+
+    /** Normaliza texto: minúsculas y sin tildes/diacríticos. */
+    private static String normalize(String text) {
+        if (text == null) return "";
+        String lower = text.toLowerCase();
+        String nfd   = Normalizer.normalize(lower, Normalizer.Form.NFD);
+        return nfd.replaceAll("\\p{InCombiningDiacriticalMarks}", "");
     }
 
     /** Retorna todos los productos. */
