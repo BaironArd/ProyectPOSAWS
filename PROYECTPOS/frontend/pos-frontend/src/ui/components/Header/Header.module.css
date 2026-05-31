@@ -73,16 +73,10 @@
 .rolAdmin { background: #7c3aed; color: #fff; }
 .rolCajero { background: #0891b2; color: #fff; }
 
-.btnLogout {
-  padding: 0.4rem 0.85rem;
-  background: #dc2626;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+.carritoInfo {
   font-size: 0.875rem;
-  font-weight: 600;
-  transition: background 0.2s;
+  color: rgba(255,255,255,0.8);
+  padding: 0.3rem 0.75rem;
+  background: rgba(255,255,255,0.1);
+  border-radius: 6px;
 }
-
-.btnLogout:hover { background: #b91c1c; }

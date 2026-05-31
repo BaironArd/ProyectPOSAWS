@@ -1,5 +1,5 @@
+// Estados UI — sin LOGIN, INVENTARIO, REPORTES, DEVOLUCION, HISTORIAL (solo cajero)
 export type EstadoUI =
-  | 'LOGIN'
   | 'IDLE'
   | 'BUSCANDO'
   | 'RESULTADOS'
@@ -7,13 +7,7 @@ export type EstadoUI =
   | 'CALCULANDO_PAGO'
   | 'PROCESANDO'
   | 'VENTA_COMPLETA'
-  | 'HISTORIAL'
-  | 'DEVOLUCION'
-  | 'INVENTARIO'
-  | 'REPORTES'
   | 'ERROR';
-
-export type Rol = 'CAJERO' | 'ADMIN';
 
 export type MetodoPago =
   | 'EFECTIVO'
@@ -48,73 +42,12 @@ export interface ErrorUI {
   mensaje: string;
 }
 
-export interface Sesion {
-  usuario: string;
-  rol: Rol;
-  token: string;
-}
-
 export interface Producto {
   id: number;
   nombre: string;
   precio: number;
   stock: number;
   activo?: boolean;
-}
-
-export interface ResumenVentaHistorial {
-  ventaId: string;
-  fechaHora: string;
-  total: number;
-  cantidadItems: number;
-  estado?: string;           // 'COMPLETADA' | 'DEVUELTA' | 'PARCIAL'
-  montoDevuelto?: number;    // monto devuelto al cliente (con IVA)
-  totalNeto?: number;        // total - montoDevuelto
-  subtotal?: number;
-  iva?: number;
-  montoPagado?: number;
-  cambio?: number;
-  cajero?: string;
-  metodoPago?: string;
-  items?: Array<{
-    productoId: number;
-    nombre: string;
-    cantidad: number;
-    precioUnitario: number;
-    subtotal: number;
-  }>;
-}
-
-export interface Devolucion {
-  ventaId: string;
-  montoDevuelto: number;
-  estado: 'DEVUELTA' | 'PARCIAL' | 'PENDIENTE';
-}
-
-export interface ItemDevolucion {
-  productoId: number;
-  nombre: string;
-  cantidad: number;          // cantidad original comprada
-  cantidadDevolver: number;  // cuántas devuelve el cliente
-  precioUnitario: number;
-  subtotal: number;
-}
-
-export interface VentasPorCajero {
-  usuario: string;
-  ventas: number;
-  monto: number;
-}
-
-export interface ReporteCierre {
-  fechaDesde: string;
-  fechaHasta: string;
-  totalVentas: number;
-  totalDevueltas: number;
-  montoTotal: number;
-  montoDevuelto: number;
-  montoNeto: number;
-  ventasPorCajero: VentasPorCajero[];
 }
 
 export interface DatosRecibo {
@@ -132,7 +65,6 @@ export interface DatosRecibo {
 
 export interface POSState {
   estado: EstadoUI;
-  sesion: Sesion | null;
   query: string;
   productos: Producto[];
   carrito: ItemCarrito[];
@@ -141,11 +73,9 @@ export interface POSState {
   pagos: PagoItem[];
   montoPagado: number;
   cambio: number;
-  historial: ResumenVentaHistorial[];
   estadoPrevio: EstadoUI | null;
   error: ErrorUI | null;
   ventaIdActual: string | null;
   datosRecibo: DatosRecibo | null;
-  /** Mapa de ventaId → DatosRecibo para ver facturas desde el historial */
   recibosGuardados: Record<string, DatosRecibo>;
 }

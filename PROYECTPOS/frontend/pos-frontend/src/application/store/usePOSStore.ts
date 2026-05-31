@@ -5,31 +5,24 @@ import type {
   ItemCarrito,
   MetodoPago,
   PagoItem,
-  Sesion,
   ErrorUI,
-  ResumenVentaHistorial,
   Producto,
   DatosRecibo,
 } from '@domain/types/POSState';
 import { calcularResumen, calcularCambio, calcularSubtotal } from '@domain/calculadora';
 
 // ---------------------------------------------------------------------------
-// Transiciones válidas de la máquina de estados
+// Transiciones válidas — solo flujo de cajero
 // ---------------------------------------------------------------------------
 const TRANSICIONES_VALIDAS: Partial<Record<EstadoUI, EstadoUI[]>> = {
-  LOGIN: ['IDLE'],
-  IDLE: ['BUSCANDO', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'LOGIN', 'ERROR'],
-  BUSCANDO: ['RESULTADOS', 'IDLE', 'ERROR'],
-  RESULTADOS: ['CARRITO_ACTIVO', 'BUSCANDO', 'IDLE', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'ERROR'],
-  CARRITO_ACTIVO: ['CALCULANDO_PAGO', 'RESULTADOS', 'HISTORIAL', 'INVENTARIO', 'REPORTES', 'ERROR'],
-  CALCULANDO_PAGO: ['PROCESANDO', 'CARRITO_ACTIVO', 'ERROR'],
-  PROCESANDO: ['VENTA_COMPLETA', 'ERROR'],
-  VENTA_COMPLETA: ['IDLE', 'DEVOLUCION', 'ERROR'],
-  HISTORIAL: ['IDLE', 'RESULTADOS', 'DEVOLUCION', 'INVENTARIO', 'REPORTES', 'ERROR'],
-  DEVOLUCION: ['IDLE', 'ERROR'],
-  INVENTARIO: ['IDLE', 'HISTORIAL', 'REPORTES', 'ERROR'],
-  REPORTES: ['IDLE', 'HISTORIAL', 'INVENTARIO', 'ERROR'],
-  ERROR: ['IDLE'],
+  IDLE:             ['BUSCANDO', 'ERROR'],
+  BUSCANDO:         ['RESULTADOS', 'IDLE', 'ERROR'],
+  RESULTADOS:       ['CARRITO_ACTIVO', 'BUSCANDO', 'IDLE', 'ERROR'],
+  CARRITO_ACTIVO:   ['CALCULANDO_PAGO', 'RESULTADOS', 'ERROR'],
+  CALCULANDO_PAGO:  ['PROCESANDO', 'CARRITO_ACTIVO', 'ERROR'],
+  PROCESANDO:       ['VENTA_COMPLETA', 'ERROR'],
+  VENTA_COMPLETA:   ['IDLE', 'ERROR'],
+  ERROR:            ['IDLE'],
 };
 
 function transicionValida(desde: EstadoUI, hacia: EstadoUI): boolean {
@@ -37,71 +30,48 @@ function transicionValida(desde: EstadoUI, hacia: EstadoUI): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Estado inicial
+// Estado inicial — arranca directo en IDLE (sin login)
 // ---------------------------------------------------------------------------
 const estadoInicial: POSState = {
-  estado: 'LOGIN',
-  sesion: null,
-  query: '',
-  productos: [],
-  carrito: [],
-  resumen: { subtotal: 0, iva: 0, total: 0 },
-  metodoPago: null,
-  pagos: [],
-  montoPagado: 0,
-  cambio: 0,
-  historial: [],
-  estadoPrevio: null,
-  error: null,
-  ventaIdActual: null,
-  datosRecibo: null,
-  recibosGuardados: {},
+  estado:          'IDLE',
+  query:           '',
+  productos:       [],
+  carrito:         [],
+  resumen:         { subtotal: 0, iva: 0, total: 0 },
+  metodoPago:      null,
+  pagos:           [],
+  montoPagado:     0,
+  cambio:          0,
+  estadoPrevio:    null,
+  error:           null,
+  ventaIdActual:   null,
+  datosRecibo:     null,
+  recibosGuardados:{},
 };
 
 // ---------------------------------------------------------------------------
-// Acciones del store
+// Acciones
 // ---------------------------------------------------------------------------
 interface POSActions {
-  // Estado UI
-  setEstado: (estado: EstadoUI) => void;
-
-  // Búsqueda
-  setQuery: (query: string) => void;
-  setProductos: (productos: Producto[]) => void;
-
-  // Carrito
-  agregarAlCarrito: (producto: Producto) => void;
+  setEstado:         (estado: EstadoUI) => void;
+  setQuery:          (query: string) => void;
+  setProductos:      (productos: Producto[]) => void;
+  agregarAlCarrito:  (producto: Producto) => void;
   modificarCantidad: (productoId: number, cantidad: number) => void;
-  eliminarDelCarrito: (productoId: number) => void;
-
-  // Pago
-  setMontoPagado: (monto: number) => void;
-  setMetodoPago: (metodo: MetodoPago) => void;
-  agregarPago: (pago: PagoItem) => void;
-  eliminarPago: (index: number) => void;
-  actualizarPago: (index: number, pago: PagoItem) => void;
-  resetPagos: () => void;
-
-  // Venta
-  setVentaIdActual: (ventaId: string) => void;
-  setDatosRecibo: (datos: DatosRecibo) => void;
-  guardarRecibo: (datos: DatosRecibo) => void;
-  resetVenta: () => void;
-  /** Solo limpia carrito/pago y va a IDLE — preserva datosRecibo para mostrar cambio */
-  irAIdle: () => void;
-
-  // Historial
-  setHistorial: (historial: ResumenVentaHistorial[]) => void;
-  verHistorial: () => void;
-  volverDeHistorial: () => void;
-
-  // Auth
-  login: (sesion: Sesion) => void;
-  logout: () => void;
-
-  // Errores
-  setError: (error: ErrorUI) => void;
-  clearError: () => void;
+  eliminarDelCarrito:(productoId: number) => void;
+  setMontoPagado:    (monto: number) => void;
+  setMetodoPago:     (metodo: MetodoPago) => void;
+  agregarPago:       (pago: PagoItem) => void;
+  eliminarPago:      (index: number) => void;
+  actualizarPago:    (index: number, pago: PagoItem) => void;
+  resetPagos:        () => void;
+  setVentaIdActual:  (ventaId: string) => void;
+  setDatosRecibo:    (datos: DatosRecibo) => void;
+  guardarRecibo:     (datos: DatosRecibo) => void;
+  resetVenta:        () => void;
+  irAIdle:           () => void;
+  setError:          (error: ErrorUI) => void;
+  clearError:        () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,19 +80,15 @@ interface POSActions {
 export const usePOSStore = create<POSState & POSActions>((set, get) => ({
   ...estadoInicial,
 
-  // --- Estado UI ---
   setEstado: (nuevoEstado) => {
     const { estado } = get();
-    if (!transicionValida(estado, nuevoEstado)) return; // transición inválida: ignorar
+    if (!transicionValida(estado, nuevoEstado)) return;
     set({ estado: nuevoEstado });
   },
 
-  // --- Búsqueda ---
-  setQuery: (query) => set({ query }),
+  setQuery:    (query)    => set({ query }),
+  setProductos:(productos)=> set({ productos }),
 
-  setProductos: (productos) => set({ productos }),
-
-  // --- Carrito ---
   agregarAlCarrito: (producto) => {
     const { carrito, estado } = get();
     if (producto.stock === 0) return;
@@ -131,7 +97,6 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
     let nuevoCarrito: ItemCarrito[];
 
     if (existente) {
-      // Validar que no supere el stock disponible
       if (existente.cantidad >= producto.stock) return;
       nuevoCarrito = carrito.map((i) =>
         i.productoId === producto.id
@@ -142,11 +107,11 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
       nuevoCarrito = [
         ...carrito,
         {
-          productoId: producto.id,
-          nombre: producto.nombre,
-          cantidad: 1,
-          precioUnitario: producto.precio,
-          subtotal: producto.precio,
+          productoId:      producto.id,
+          nombre:          producto.nombre,
+          cantidad:        1,
+          precioUnitario:  producto.precio,
+          subtotal:        producto.precio,
           stockDisponible: producto.stock,
         },
       ];
@@ -154,7 +119,6 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
 
     const resumen = calcularResumen(nuevoCarrito);
     const nuevoEstado: EstadoUI = estado === 'RESULTADOS' ? 'CARRITO_ACTIVO' : estado;
-
     set({ carrito: nuevoCarrito, resumen, estado: nuevoEstado });
   },
 
@@ -170,17 +134,14 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
       return;
     }
 
-    // Validar contra stock disponible
     const stockMax = item?.stockDisponible ?? Infinity;
     const cantidadFinal = Math.min(cantidad, stockMax);
-
     const nuevoCarrito = carrito.map((i) =>
       i.productoId === productoId
         ? { ...i, cantidad: cantidadFinal, subtotal: calcularSubtotal(i.precioUnitario, cantidadFinal) }
         : i
     );
-    const resumen = calcularResumen(nuevoCarrito);
-    set({ carrito: nuevoCarrito, resumen });
+    set({ carrito: nuevoCarrito, resumen: calcularResumen(nuevoCarrito) });
   },
 
   eliminarDelCarrito: (productoId) => {
@@ -191,103 +152,49 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
     set({ carrito: nuevoCarrito, resumen, estado: nuevoEstado });
   },
 
-  // --- Pago ---
   setMontoPagado: (monto) => {
     const { resumen } = get();
-    const cambio = calcularCambio(monto, resumen.total);
-    set({ montoPagado: monto, cambio });
+    set({ montoPagado: monto, cambio: calcularCambio(monto, resumen.total) });
   },
 
-  setMetodoPago: (metodo) => set({ metodoPago: metodo, pagos: [] }),
+  setMetodoPago:  (metodo) => set({ metodoPago: metodo, pagos: [] }),
+  agregarPago:    (pago)   => set((s) => ({ pagos: [...s.pagos, pago] })),
+  eliminarPago:   (index)  => set((s) => ({ pagos: s.pagos.filter((_, i) => i !== index) })),
+  actualizarPago: (index, pago) => set((s) => ({ pagos: s.pagos.map((p, i) => i === index ? pago : p) })),
+  resetPagos:     ()       => set({ pagos: [], metodoPago: null, montoPagado: 0, cambio: 0 }),
 
-  agregarPago: (pago) => {
-    const { pagos } = get();
-    set({ pagos: [...pagos, pago] });
-  },
-
-  eliminarPago: (index) => {
-    const { pagos } = get();
-    set({ pagos: pagos.filter((_, i) => i !== index) });
-  },
-
-  actualizarPago: (index, pago) => {
-    const { pagos } = get();
-    set({ pagos: pagos.map((p, i) => (i === index ? pago : p)) });
-  },
-
-  resetPagos: () => set({ pagos: [], metodoPago: null, montoPagado: 0, cambio: 0 }),
-
-  // --- Venta ---
   setVentaIdActual: (ventaId) => set({ ventaIdActual: ventaId }),
+  setDatosRecibo:   (datos)   => set({ datosRecibo: datos }),
+  guardarRecibo:    (datos)   => set((s) => ({ recibosGuardados: { ...s.recibosGuardados, [datos.ventaId]: datos } })),
 
-  setDatosRecibo: (datos) => set({ datosRecibo: datos }),
+  resetVenta: () => set({
+    carrito:     [],
+    resumen:     { subtotal: 0, iva: 0, total: 0 },
+    query:       '',
+    productos:   [],
+    metodoPago:  null,
+    pagos:       [],
+    montoPagado: 0,
+    cambio:      0,
+    ventaIdActual: null,
+    datosRecibo:   null,
+    estado:        'IDLE',
+  }),
 
-  guardarRecibo: (datos) => {
-    const { recibosGuardados } = get();
-    set({ recibosGuardados: { ...recibosGuardados, [datos.ventaId]: datos } });
-  },
+  irAIdle: () => set({
+    carrito:     [],
+    resumen:     { subtotal: 0, iva: 0, total: 0 },
+    query:       '',
+    productos:   [],
+    metodoPago:  null,
+    pagos:       [],
+    montoPagado: 0,
+    cambio:      0,
+    ventaIdActual: null,
+    estado:        'IDLE',
+    // datosRecibo se conserva para mostrar el cambio
+  }),
 
-  resetVenta: () =>
-    set({
-      carrito: [],
-      resumen: { subtotal: 0, iva: 0, total: 0 },
-      query: '',
-      productos: [],
-      metodoPago: null,
-      pagos: [],
-      montoPagado: 0,
-      cambio: 0,
-      ventaIdActual: null,
-      datosRecibo: null,
-      estado: 'IDLE',
-    }),
-
-  // Solo limpia carrito/pago y va a IDLE — preserva datosRecibo para mostrar cambio
-  irAIdle: () =>
-    set({
-      carrito: [],
-      resumen: { subtotal: 0, iva: 0, total: 0 },
-      query: '',
-      productos: [],
-      metodoPago: null,
-      pagos: [],
-      montoPagado: 0,
-      cambio: 0,
-      ventaIdActual: null,
-      estado: 'IDLE',
-      // datosRecibo se conserva intencionalmente
-    }),
-
-  // --- Historial ---
-  setHistorial: (historial) => set({ historial }),
-
-  verHistorial: () => {
-    const { estado } = get();
-    // Guardar estado previo para poder volver — funciona desde cualquier estado autenticado
-    const estadosNoNavegables: EstadoUI[] = ['LOGIN', 'PROCESANDO'];
-    if (estadosNoNavegables.includes(estado)) return;
-    set({ estadoPrevio: estado, estado: 'HISTORIAL' });
-  },
-
-  volverDeHistorial: () => {
-    const { estadoPrevio } = get();
-    set({ estado: estadoPrevio ?? 'IDLE', estadoPrevio: null });
-  },
-
-  // --- Auth ---
-  login: (sesion) => set({ sesion, estado: 'IDLE' }),
-
-  logout: () =>
-    set({
-      ...estadoInicial,
-      estado: 'LOGIN',
-    }),
-
-  // --- Errores ---
-  setError: (error) => set({ error, estado: 'ERROR' }),
-
-  clearError: () => {
-    const { estadoPrevio } = get();
-    set({ error: null, estado: estadoPrevio ?? 'IDLE', estadoPrevio: null });
-  },
+  setError:   (error) => set({ error, estado: 'ERROR' }),
+  clearError: ()      => set((s) => ({ error: null, estado: s.estadoPrevio ?? 'IDLE', estadoPrevio: null })),
 }));

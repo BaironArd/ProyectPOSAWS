@@ -5,7 +5,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttri
 
 /**
  * Objeto anidado dentro de ProductRecord.
- * Representa el campo "producto" en DynamoDB:
+ * Estructura exacta en DynamoDB (snake_case):
  * { name, price, stock_level, low_stock_threshold }
  */
 @DynamoDbBean

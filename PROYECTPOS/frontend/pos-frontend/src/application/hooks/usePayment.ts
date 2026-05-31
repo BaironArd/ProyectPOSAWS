@@ -21,7 +21,6 @@ export function usePayment(ventaPort: IVentaPort) {
   const metodoPago = usePOSStore((s) => s.metodoPago);
   const pagos = usePOSStore((s) => s.pagos);
   const montoPagado = usePOSStore((s) => s.montoPagado);
-  const sesion = usePOSStore((s) => s.sesion);
   const setEstado = usePOSStore((s) => s.setEstado);
   const setError = usePOSStore((s) => s.setError);
   const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
@@ -43,7 +42,6 @@ export function usePayment(ventaPort: IVentaPort) {
         metodoPago,
         pagos,
         idempotencyKey: generarIdempotencyKey(),
-        usuarioCajero: sesion?.usuario,
       });
 
       if (result.ok) {
@@ -68,7 +66,7 @@ export function usePayment(ventaPort: IVentaPort) {
         const recibo: import('@domain/types/POSState').DatosRecibo = {
           ventaId: result.ventaId,
           fechaHora: new Date().toISOString(),
-          cajero: sesion?.usuario ?? '',
+          cajero: 'cajero',
           items: carrito.map(i => ({
             nombre: i.nombre,
             cantidad: i.cantidad,

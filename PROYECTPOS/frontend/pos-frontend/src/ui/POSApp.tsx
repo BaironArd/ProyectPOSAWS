@@ -1,107 +1,63 @@
 import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
+import { useKeyboardShortcuts } from '@application/hooks/useKeyboardShortcuts';
 
-// Ports
-import type { IAuthPort } from '@domain/ports/IAuthPort';
 import type { IProductoPort } from '@domain/ports/IProductoPort';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
-import type { IVentaHistorialPort } from '@domain/ports/IVentaHistorialPort';
-import type { IDevolucionPort } from '@domain/ports/IDevolucionPort';
-import type { IInventarioPort } from '@domain/ports/IInventarioPort';
-import type { IReportePort } from '@domain/ports/IReportePort';
 import type { IImpresionPort } from '@domain/ports/IImpresionPort';
 
-// Components
-import { LoginForm } from './components/LoginForm/LoginForm';
-import { Header } from './components/Header/Header';
-import { ErrorBanner } from './components/ErrorBanner/ErrorBanner';
-import { SearchBar } from './components/SearchBar/SearchBar';
-import { ProductList } from './components/ProductList/ProductList';
-import { Cart } from './components/Cart/Cart';
+import { Header }       from './components/Header/Header';
+import { ErrorBanner }  from './components/ErrorBanner/ErrorBanner';
+import { SearchBar }    from './components/SearchBar/SearchBar';
+import { ProductList }  from './components/ProductList/ProductList';
+import { Cart }         from './components/Cart/Cart';
 import { OrderSummary } from './components/OrderSummary/OrderSummary';
 import { PaymentPanel } from './components/PaymentPanel/PaymentPanel';
-import { SalesHistory } from './components/SalesHistory/SalesHistory';
-import { RefundPanel } from './components/RefundPanel/RefundPanel';
-import { InventoryPanel } from './components/InventoryPanel/InventoryPanel';
-import { ReportsPanel } from './components/ReportsPanel/ReportsPanel';
 import { ReceiptButton } from './components/ReceiptButton/ReceiptButton';
 import { ReceiptPortal } from './components/ReceiptPortal/ReceiptPortal';
 
 import styles from './POSApp.module.css';
 
 interface Props {
-  authPort: IAuthPort;
-  productoPort: IProductoPort;
-  ventaPort: IVentaPort;
-  historialPort: IVentaHistorialPort;
-  devolucionPort: IDevolucionPort;
-  inventarioPort: IInventarioPort;
-  reportePort: IReportePort;
+  productoPort:  IProductoPort;
+  ventaPort:     IVentaPort;
   impresionPort: IImpresionPort;
 }
 
-export function POSApp({
-  authPort,
-  productoPort,
-  ventaPort,
-  historialPort,
-  devolucionPort,
-  inventarioPort,
-  reportePort,
-  impresionPort,
-}: Props) {
-  const estado = usePOSStore((s) => s.estado);
-  const sesion = usePOSStore((s) => s.sesion);
-  const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
+/**
+ * Aplicación POS simplificada — solo flujo de cajero:
+ * Buscar producto → Agregar al carrito → Pagar → Venta completa
+ *
+ * Sin login, sin admin, sin inventario, sin reportes, sin devoluciones.
+ */
+export function POSApp({ productoPort, ventaPort, impresionPort }: Props) {
+  const estado      = usePOSStore((s) => s.estado);
   const datosRecibo = usePOSStore((s) => s.datosRecibo);
-  const setEstado = usePOSStore((s) => s.setEstado);
-  const resetVenta = usePOSStore((s) => s.resetVenta);
-  const irAIdle = usePOSStore((s) => s.irAIdle);
-  const setVentaIdActual = usePOSStore((s) => s.setVentaIdActual);
+  const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
+  const irAIdle     = usePOSStore((s) => s.irAIdle);
+  const resetVenta  = usePOSStore((s) => s.resetVenta);
 
-  // Auto-retorno a IDLE tras 8s — preserva datosRecibo para que el cambio siga visible
+  // Activar atajos de teclado estándar POS
+  useKeyboardShortcuts();
+
+  // Auto-retorno a IDLE tras 8s después de venta completa
   useEffect(() => {
     if (estado !== 'VENTA_COMPLETA') return;
     const timer = setTimeout(() => irAIdle(), 8000);
     return () => clearTimeout(timer);
   }, [estado, irAIdle]);
 
-  // Pantalla de login
-  if (!sesion || estado === 'LOGIN') {
-    return <LoginForm authPort={authPort} />;
-  }
-
-  // Estados donde se muestra un panel especial a pantalla completa (sin carrito al lado)
-  const panelEspecial = ['HISTORIAL', 'DEVOLUCION', 'INVENTARIO', 'REPORTES'].includes(estado);
-
-  // El panel de venta (búsqueda + carrito) se muestra siempre excepto en paneles especiales
-  // y en VENTA_COMPLETA
-  const mostrarPanelVenta = !panelEspecial && estado !== 'VENTA_COMPLETA';
+  const mostrarPanelVenta = estado !== 'VENTA_COMPLETA';
 
   return (
     <div className={styles.app}>
-      {/* Portal para impresión de recibo - se renderiza directo en el body */}
+      {/* Portal de impresión */}
       {datosRecibo && <ReceiptPortal datos={datosRecibo} />}
-      
-      <Header authPort={authPort} />
+
+      <Header />
 
       <main className={styles.main}>
         <ErrorBanner />
-
-        {/* ── Paneles especiales (ocupan el área principal) ── */}
-        {estado === 'HISTORIAL' && (
-          <SalesHistory
-            historialPort={historialPort}
-            onDevolver={(ventaId) => {
-              setVentaIdActual(ventaId);
-              setEstado('DEVOLUCION');
-            }}
-          />
-        )}
-
-        {estado === 'DEVOLUCION' && <RefundPanel devolucionPort={devolucionPort} />}
-        {estado === 'INVENTARIO' && <InventoryPanel inventarioPort={inventarioPort} />}
-        {estado === 'REPORTES' && <ReportsPanel reportePort={reportePort} />}
 
         {/* ── Pantalla de venta completada ── */}
         {estado === 'VENTA_COMPLETA' && (
@@ -126,9 +82,6 @@ export function POSApp({
                 impresionPort={impresionPort}
                 datosVenta={datosRecibo ?? undefined}
               />
-              <button className={styles.btnDevolver} onClick={() => setEstado('DEVOLUCION')}>
-                Devolver venta
-              </button>
               <button className={styles.btnNuevaVenta} onClick={resetVenta}>
                 Nueva venta
               </button>
@@ -136,16 +89,13 @@ export function POSApp({
           </div>
         )}
 
-        {/* ── Panel de venta: siempre visible excepto en paneles especiales ── */}
+        {/* ── Panel principal: búsqueda + carrito ── */}
         {mostrarPanelVenta && (
           <div className={styles.flujoVenta}>
-            {/* Columna izquierda: búsqueda + resultados */}
             <div className={styles.columnaIzq}>
               <SearchBar productoPort={productoPort} />
               <ProductList />
             </div>
-
-            {/* Columna derecha: carrito + resumen + pago (siempre visible) */}
             <div className={styles.columnaDer}>
               <Cart />
               <OrderSummary />

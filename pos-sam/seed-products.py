@@ -1,6 +1,16 @@
 """
 seed-products.py
-Carga 50 productos de prueba en la tabla ProductosTable de DynamoDB.
+Carga productos de prueba en la tabla ProductosTable de DynamoDB.
+
+Estructura de cada item (exactamente como pide el profesor):
+{
+    "id":                 String (PK - UUID),
+    "code":               String (GSI code-index),
+    "name":               String,
+    "price":              Number,
+    "stock_level":        Number,
+    "low_stock_threshold": Number
+}
 
 Uso:
     python pos-sam/seed-products.py
@@ -8,106 +18,112 @@ Uso:
 Requisitos:
     pip install boto3
     aws configure  (credenciales configuradas)
-
-La estructura de cada item es exactamente la que pide el profesor:
-{
-    "id":      String (PK),
-    "code":    String (GSI code-index),
-    "producto": {
-        "name":                String,
-        "price":               Number,
-        "stock_level":         Number,
-        "low_stock_threshold": Number
-    }
-}
 """
 
 import boto3
 import uuid
-import json
 from decimal import Decimal
 
-# ── Configuración ─────────────────────────────────────────────────────────────
 TABLE_NAME = "ProductosTable"
 REGION     = "us-east-1"
 
-# ── 50 productos de prueba ────────────────────────────────────────────────────
 PRODUCTS = [
-    # Periféricos
-    {"code": "PERI-001", "name": "Mouse Inalámbrico Logitech",     "price": 45000,  "stock": 25, "threshold": 5},
-    {"code": "PERI-002", "name": "Teclado Mecánico RGB",           "price": 89000,  "stock": 15, "threshold": 3},
-    {"code": "PERI-003", "name": "Audífonos Bluetooth Sony",       "price": 120000, "stock": 10, "threshold": 2},
-    {"code": "PERI-004", "name": "Webcam Full HD 1080p",           "price": 65000,  "stock": 12, "threshold": 3},
-    {"code": "PERI-005", "name": "Mouse Pad XL Gaming",            "price": 25000,  "stock": 30, "threshold": 5},
-    {"code": "PERI-006", "name": "Hub USB-C 7 puertos",            "price": 55000,  "stock": 20, "threshold": 4},
-    {"code": "PERI-007", "name": "Micrófono USB Condensador",      "price": 95000,  "stock": 8,  "threshold": 2},
-    {"code": "PERI-008", "name": "Teclado Inalámbrico Slim",       "price": 48000,  "stock": 18, "threshold": 4},
-    {"code": "PERI-009", "name": "Mouse Ergonómico Vertical",      "price": 72000,  "stock": 14, "threshold": 3},
-    {"code": "PERI-010", "name": "Auriculares con Micrófono",      "price": 38000,  "stock": 22, "threshold": 5},
+    # Bebidas
+    {"code": "BEB-001", "name": "Red Bull 250ml",          "price": 3500,  "stock": 40, "threshold": 5},
+    {"code": "BEB-002", "name": "Coca-Cola 350ml",         "price": 2500,  "stock": 60, "threshold": 10},
+    {"code": "BEB-003", "name": "Agua Cristal 600ml",      "price": 1800,  "stock": 80, "threshold": 15},
+    {"code": "BEB-004", "name": "Jugo Hit Naranja 300ml",  "price": 2200,  "stock": 45, "threshold": 8},
+    {"code": "BEB-005", "name": "Gatorade Azul 500ml",     "price": 4000,  "stock": 30, "threshold": 5},
+    {"code": "BEB-006", "name": "Pony Malta 330ml",        "price": 2800,  "stock": 50, "threshold": 8},
+    {"code": "BEB-007", "name": "Sprite 350ml",            "price": 2500,  "stock": 55, "threshold": 10},
+    {"code": "BEB-008", "name": "Monster Energy 473ml",    "price": 6500,  "stock": 25, "threshold": 5},
 
-    # Almacenamiento
-    {"code": "STOR-001", "name": "SSD Externo 1TB Samsung",        "price": 185000, "stock": 8,  "threshold": 2},
-    {"code": "STOR-002", "name": "Memoria USB 64GB Kingston",      "price": 22000,  "stock": 40, "threshold": 8},
-    {"code": "STOR-003", "name": "Disco Duro Externo 2TB WD",      "price": 145000, "stock": 6,  "threshold": 2},
-    {"code": "STOR-004", "name": "Memoria RAM DDR4 8GB",           "price": 78000,  "stock": 12, "threshold": 3},
-    {"code": "STOR-005", "name": "Tarjeta MicroSD 128GB",          "price": 35000,  "stock": 25, "threshold": 5},
-    {"code": "STOR-006", "name": "SSD NVMe 500GB",                 "price": 165000, "stock": 7,  "threshold": 2},
-    {"code": "STOR-007", "name": "Memoria USB 32GB Sandisk",       "price": 15000,  "stock": 50, "threshold": 10},
-    {"code": "STOR-008", "name": "Disco Duro Externo 1TB Seagate", "price": 115000, "stock": 9,  "threshold": 2},
+    # Snacks
+    {"code": "SNK-001", "name": "Papas Margarita 30g",     "price": 1500,  "stock": 100,"threshold": 20},
+    {"code": "SNK-002", "name": "Chitos 40g",              "price": 1800,  "stock": 80, "threshold": 15},
+    {"code": "SNK-003", "name": "Oreo 36g",                "price": 2200,  "stock": 60, "threshold": 10},
+    {"code": "SNK-004", "name": "Nucita 30g",              "price": 1200,  "stock": 90, "threshold": 15},
+    {"code": "SNK-005", "name": "Chocolatina Jet 16g",     "price": 1000,  "stock": 120,"threshold": 20},
+    {"code": "SNK-006", "name": "Maní Salado 50g",         "price": 2000,  "stock": 70, "threshold": 12},
+    {"code": "SNK-007", "name": "Galletas Festival 100g",  "price": 2500,  "stock": 55, "threshold": 10},
+    {"code": "SNK-008", "name": "Bon Bon Bum Fresa",       "price": 500,   "stock": 200,"threshold": 30},
 
-    # Cables y adaptadores
-    {"code": "CABL-001", "name": "Cable HDMI 2.0 2m",             "price": 18000,  "stock": 35, "threshold": 7},
-    {"code": "CABL-002", "name": "Cable USB-C a USB-A 1m",        "price": 12000,  "stock": 45, "threshold": 10},
-    {"code": "CABL-003", "name": "Adaptador HDMI a VGA",          "price": 22000,  "stock": 20, "threshold": 4},
-    {"code": "CABL-004", "name": "Cable DisplayPort 1.4 2m",      "price": 28000,  "stock": 15, "threshold": 3},
-    {"code": "CABL-005", "name": "Adaptador USB-C a HDMI",        "price": 35000,  "stock": 18, "threshold": 4},
-    {"code": "CABL-006", "name": "Cable Ethernet Cat6 3m",        "price": 14000,  "stock": 30, "threshold": 6},
-    {"code": "CABL-007", "name": "Regleta 6 tomas con USB",       "price": 42000,  "stock": 16, "threshold": 3},
+    # Lácteos
+    {"code": "LAC-001", "name": "Leche Alquería 1L",       "price": 4200,  "stock": 30, "threshold": 5},
+    {"code": "LAC-002", "name": "Yogurt Alpina 200g",      "price": 2800,  "stock": 40, "threshold": 8},
+    {"code": "LAC-003", "name": "Queso Campesino 250g",    "price": 5500,  "stock": 20, "threshold": 4},
+    {"code": "LAC-004", "name": "Kumis Alpina 200ml",      "price": 2500,  "stock": 35, "threshold": 6},
 
-    # Accesorios de laptop
-    {"code": "LAPT-001", "name": "Soporte Laptop Aluminio",       "price": 55000,  "stock": 12, "threshold": 3},
-    {"code": "LAPT-002", "name": "Mochila Laptop 15.6\"",         "price": 85000,  "stock": 10, "threshold": 2},
-    {"code": "LAPT-003", "name": "Funda Neopreno 14\"",           "price": 28000,  "stock": 20, "threshold": 4},
-    {"code": "LAPT-004", "name": "Cargador Universal 65W USB-C",  "price": 72000,  "stock": 8,  "threshold": 2},
-    {"code": "LAPT-005", "name": "Cooling Pad con 4 ventiladores","price": 48000,  "stock": 11, "threshold": 3},
-    {"code": "LAPT-006", "name": "Candado de Seguridad Kensington","price": 32000, "stock": 14, "threshold": 3},
+    # Panadería
+    {"code": "PAN-001", "name": "Pan Tajado Bimbo",        "price": 6500,  "stock": 25, "threshold": 5},
+    {"code": "PAN-002", "name": "Croissant",               "price": 3500,  "stock": 30, "threshold": 5},
+    {"code": "PAN-003", "name": "Pandebono x3",            "price": 4000,  "stock": 20, "threshold": 4},
+    {"code": "PAN-004", "name": "Almojábana x3",           "price": 3500,  "stock": 20, "threshold": 4},
 
-    # Redes
-    {"code": "NETW-001", "name": "Router WiFi 6 TP-Link",         "price": 195000, "stock": 5,  "threshold": 1},
-    {"code": "NETW-002", "name": "Switch 8 puertos Gigabit",      "price": 85000,  "stock": 7,  "threshold": 2},
-    {"code": "NETW-003", "name": "Adaptador WiFi USB 600Mbps",    "price": 38000,  "stock": 15, "threshold": 3},
-    {"code": "NETW-004", "name": "Repetidor WiFi 300Mbps",        "price": 55000,  "stock": 9,  "threshold": 2},
-    {"code": "NETW-005", "name": "Tarjeta de Red PCIe Gigabit",   "price": 42000,  "stock": 8,  "threshold": 2},
+    # Aseo personal
+    {"code": "ASE-001", "name": "Jabón Protex 125g",       "price": 3800,  "stock": 40, "threshold": 8},
+    {"code": "ASE-002", "name": "Shampoo Head&Shoulders",  "price": 18000, "stock": 15, "threshold": 3},
+    {"code": "ASE-003", "name": "Desodorante Axe 150ml",   "price": 12000, "stock": 20, "threshold": 4},
+    {"code": "ASE-004", "name": "Crema Dental Colgate",    "price": 8500,  "stock": 25, "threshold": 5},
+    {"code": "ASE-005", "name": "Papel Higiénico x4",      "price": 7500,  "stock": 30, "threshold": 6},
 
-    # Impresión
-    {"code": "PRNT-001", "name": "Cartucho Tinta Negro HP 664",   "price": 28000,  "stock": 20, "threshold": 5},
-    {"code": "PRNT-002", "name": "Cartucho Tinta Color HP 664",   "price": 32000,  "stock": 18, "threshold": 4},
-    {"code": "PRNT-003", "name": "Papel Fotográfico A4 50 hojas", "price": 22000,  "stock": 25, "threshold": 5},
-    {"code": "PRNT-004", "name": "Tóner Samsung MLT-D101S",       "price": 65000,  "stock": 8,  "threshold": 2},
+    # Hogar
+    {"code": "HOG-001", "name": "Detergente Ariel 500g",   "price": 9500,  "stock": 20, "threshold": 4},
+    {"code": "HOG-002", "name": "Jabón Loza Axión 500g",   "price": 5500,  "stock": 25, "threshold": 5},
+    {"code": "HOG-003", "name": "Suavizante Downy 500ml",  "price": 8000,  "stock": 18, "threshold": 3},
 
-    # Energía
-    {"code": "ENRG-001", "name": "UPS 600VA APC",                 "price": 185000, "stock": 4,  "threshold": 1},
-    {"code": "ENRG-002", "name": "Batería Portátil 20000mAh",     "price": 75000,  "stock": 12, "threshold": 3},
-    {"code": "ENRG-003", "name": "Cargador Inalámbrico 15W",      "price": 45000,  "stock": 16, "threshold": 4},
-    {"code": "ENRG-004", "name": "Batería Portátil 10000mAh",     "price": 48000,  "stock": 14, "threshold": 3},
+    # Cigarrillos y miscelánea
+    {"code": "MIS-001", "name": "Cigarrillos Marlboro x10","price": 5000,  "stock": 50, "threshold": 10},
+    {"code": "MIS-002", "name": "Encendedor BIC",          "price": 3000,  "stock": 40, "threshold": 8},
+    {"code": "MIS-003", "name": "Pilas AA x2",             "price": 4500,  "stock": 30, "threshold": 6},
+    {"code": "MIS-004", "name": "Bolsa Plástica x10",      "price": 1000,  "stock": 100,"threshold": 20},
 
-    # Monitores y video
-    {"code": "DISP-001", "name": "Monitor LED 24\" Full HD",      "price": 485000, "stock": 3,  "threshold": 1},
-    {"code": "DISP-002", "name": "Soporte Monitor Articulado",    "price": 95000,  "stock": 6,  "threshold": 2},
-    {"code": "DISP-003", "name": "Filtro Privacidad 15.6\"",      "price": 55000,  "stock": 8,  "threshold": 2},
+    # Enlatados
+    {"code": "ENL-001", "name": "Atún Van Camps 170g",     "price": 4800,  "stock": 35, "threshold": 7},
+    {"code": "ENL-002", "name": "Sardinas Deli 125g",      "price": 3500,  "stock": 30, "threshold": 6},
+    {"code": "ENL-003", "name": "Frijoles La Constancia",  "price": 3200,  "stock": 25, "threshold": 5},
 
-    # Seguridad
-    {"code": "SECU-001", "name": "Cámara IP WiFi 1080p",          "price": 125000, "stock": 5,  "threshold": 1},
-    {"code": "SECU-002", "name": "Lector Huella Digital USB",     "price": 68000,  "stock": 7,  "threshold": 2},
+    # Condimentos
+    {"code": "CON-001", "name": "Sal Refisal 500g",        "price": 1800,  "stock": 40, "threshold": 8},
+    {"code": "CON-002", "name": "Azúcar Riopaila 500g",    "price": 2500,  "stock": 35, "threshold": 7},
+    {"code": "CON-003", "name": "Aceite Girasol 500ml",    "price": 8500,  "stock": 20, "threshold": 4},
+    {"code": "CON-004", "name": "Salsa de Tomate Fruco",   "price": 5500,  "stock": 25, "threshold": 5},
+    {"code": "CON-005", "name": "Mayonesa Fruco 200g",     "price": 6000,  "stock": 22, "threshold": 4},
+
+    # Frutas y verduras empacadas
+    {"code": "FRU-001", "name": "Banano x5",               "price": 3000,  "stock": 30, "threshold": 5},
+    {"code": "FRU-002", "name": "Manzana x3",              "price": 4500,  "stock": 25, "threshold": 5},
+    {"code": "FRU-003", "name": "Naranja x6",              "price": 3500,  "stock": 28, "threshold": 5},
+
+    # Medicamentos básicos
+    {"code": "MED-001", "name": "Acetaminofén 500mg x10",  "price": 3500,  "stock": 30, "threshold": 6},
+    {"code": "MED-002", "name": "Ibuprofeno 400mg x10",    "price": 4500,  "stock": 25, "threshold": 5},
+    {"code": "MED-003", "name": "Suero Oral Pedialyte",    "price": 5500,  "stock": 20, "threshold": 4},
 ]
 
 
+def limpiar_tabla(table):
+    """Elimina todos los items existentes en la tabla."""
+    print("Limpiando tabla existente...")
+    scan = table.scan()
+    items = scan.get("Items", [])
+    eliminados = 0
+    with table.batch_writer() as batch:
+        for item in items:
+            batch.delete_item(Key={"id": item["id"]})
+            eliminados += 1
+    print(f"  {eliminados} items eliminados.\n")
+
+
 def seed_products():
-    """Carga los 50 productos en DynamoDB."""
     dynamodb = boto3.resource("dynamodb", region_name=REGION)
     table    = dynamodb.Table(TABLE_NAME)
 
     print(f"Conectando a DynamoDB tabla '{TABLE_NAME}' en {REGION}...")
+
+    # Limpiar primero
+    limpiar_tabla(table)
+
     print(f"Cargando {len(PRODUCTS)} productos...\n")
 
     success = 0
@@ -117,14 +133,12 @@ def seed_products():
         for p in PRODUCTS:
             try:
                 item = {
-                    "id":   str(uuid.uuid4()),
-                    "code": p["code"],
-                    "producto": {
-                        "name":                p["name"],
-                        "price":               Decimal(str(p["price"])),
-                        "stock_level":         p["stock"],
-                        "low_stock_threshold": p["threshold"]
-                    }
+                    "id":                  str(uuid.uuid4()),
+                    "code":                p["code"],
+                    "name":                p["name"],
+                    "price":               Decimal(str(p["price"])),
+                    "stock_level":         p["stock"],
+                    "low_stock_threshold": p["threshold"]
                 }
                 batch.put_item(Item=item)
                 print(f"  ✓ [{p['code']}] {p['name']} - ${p['price']:,}")

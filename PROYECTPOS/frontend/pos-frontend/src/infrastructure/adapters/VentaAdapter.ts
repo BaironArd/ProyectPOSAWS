@@ -1,25 +1,40 @@
 import type { IVentaPort, ConfirmarVentaPayload, ConfirmarVentaResult } from '@domain/ports/IVentaPort';
-import { httpFetch } from './httpClient';
 import { toPosApiError } from './toPosApiError';
+import { API_BASE_URL } from '../../config';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
-
+/**
+ * Adaptador que conecta al API Gateway de AWS.
+ * Endpoint: POST /api/v1/sales
+ *
+ * La Lambda espera:
+ * {
+ *   paymentMethod: string,
+ *   amountPaid: number,
+ *   items: [{ productId: string, name: string, quantity: number, unitPrice: number }]
+ * }
+ */
 export class VentaAdapter implements IVentaPort {
   async confirmar(payload: ConfirmarVentaPayload): Promise<ConfirmarVentaResult> {
     const body = {
-      items: payload.carrito.map(i => ({ productoId: i.productoId, cantidad: i.cantidad })),
-      montoPagado: payload.total,
-      idempotencyKey: payload.idempotencyKey,
-      usuarioCajero: payload.usuarioCajero,
-      metodoPago: payload.metodoPago,
-      pagos: payload.pagos.map(p => ({ metodo: p.metodo, monto: p.monto, referencia: p.referencia })),
+      paymentMethod: payload.metodoPago ?? 'CASH',
+      amountPaid:    payload.total,
+      items: payload.carrito.map(i => ({
+        productId:  String(i.productoId),
+        name:       i.nombre,
+        quantity:   i.cantidad,
+        unitPrice:  i.precioUnitario,
+      })),
     };
-    const res = await httpFetch(`${API_BASE}/ventas`, {
+
+    const res = await fetch(`${API_BASE_URL}/sales`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
+
     if (!res.ok) throw await toPosApiError(res);
-    const data = await res.json() as { data: { ventaId: string } };
+
+    const data = await res.json() as { success: boolean; data: { ventaId: string } };
     return { ok: true, ventaId: data.data.ventaId };
   }
 }
