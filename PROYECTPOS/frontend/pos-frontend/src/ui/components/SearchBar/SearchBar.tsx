@@ -23,7 +23,7 @@ export function SearchBar({ productoPort }: Props) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar producto por nombre o código (mínimo 2 caracteres)..."
+          placeholder="Buscar producto por nombre o código..."
           className={styles.input}
           aria-label="Buscar producto"
           aria-busy={buscando}

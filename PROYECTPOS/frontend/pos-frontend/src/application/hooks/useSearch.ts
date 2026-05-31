@@ -5,7 +5,6 @@ import { PosApiError } from '@domain/errors/PosApiError';
 import { mensajeErrorApi } from '@domain/errors/errorMessages';
 
 const DEBOUNCE_MS = 300;
-const MIN_CHARS = 2;
 
 export function useSearch(productoPort: IProductoPort) {
   const query = usePOSStore((s) => s.query);
@@ -17,12 +16,7 @@ export function useSearch(productoPort: IProductoPort) {
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
 
-    if (query.length < MIN_CHARS) {
-      setProductos([]);
-      setEstado('IDLE');
-      return;
-    }
-
+    // Con query vacía cargamos todos los productos (carga inicial)
     setEstado('BUSCANDO');
 
     timerRef.current = setTimeout(async () => {
