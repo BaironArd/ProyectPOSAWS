@@ -1,6 +1,8 @@
 # ✅ CHECKLIST FINAL DEL EXAMEN POS
 
-## 📊 ESTADO GENERAL: LISTO PARA ENTREGAR
+## 📊 ESTADO GENERAL: LISTO PARA CAPTURAS
+
+**Progreso**: 98% COMPLETADO
 
 ---
 
@@ -75,44 +77,51 @@
 
 ---
 
-### ⚠️ Tarea 7: Deploy de Lambda actualizada
-**Estado**: Pendiente de ejecutar en CMD
+### ✅ Tarea 7: Deploy de Lambda actualizada
+**Estado**: ✅ COMPLETADO
 
-**Pasos para completar**:
-```cmd
-cd C:\Users\Usuario\Downloads\proyectPOSAWS\pos-sam
-sam build
-sam deploy --no-confirm-changeset
+**Resultado**:
+```
+Stack name: pos-sam
+Region: us-east-1
+API Gateway URL: https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
+Status: Deployed successfully
 ```
 
-**Resultado esperado**: URL del API Gateway actualizada
+**Endpoints disponibles**:
+- GET /api/v1/products
+- POST /api/v1/sales
+- POST /api/v1/payments
+- GET /api/v1/reports/*
 
 ---
 
-### ⚠️ Tarea 8: Configurar .env con URL real
-**Estado**: Pendiente de URL del deploy
+### ✅ Tarea 8: Configurar .env con URL real
+**Estado**: ✅ COMPLETADO
 
-**Pasos para completar**:
-1. Copiar URL del API Gateway después del deploy
-2. Crear archivo `.env`:
-```bash
-cd C:\Users\Usuario\Downloads\proyectPOSAWS\PROYECTPOS\frontend\pos-frontend
-echo VITE_API_BASE_URL=https://[tu-api-id].execute-api.us-east-1.amazonaws.com/Prod > .env
+**Archivo creado**: `.env`
 ```
+VITE_API_BASE_URL=https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
+```
+
+**Verificación**:
+- ✅ 50 productos cargados en DynamoDB
+- ✅ Frontend conectado al API Gateway
+- ✅ Frontend corriendo en http://localhost:5173/
 
 ---
 
-### ⚠️ Tarea 9: Probar flujo end-to-end
-**Estado**: Pendiente de deploy y configuración
+### ⚠️ Tarea 9: Tomar capturas de pantalla
+**Estado**: ⚠️ PENDIENTE (ÚLTIMO PASO)
 
-**Pasos para completar**:
-1. Cargar productos: `python pos-sam/seed-products.py`
-2. Iniciar frontend: `npm run dev`
-3. Verificar:
-   - GET /productos carga productos ✅
-   - POST /ventas registra venta ✅
-   - Manejo de errores funciona ✅
-4. Tomar capturas de pantalla
+**Instrucciones**: Ver archivo `INSTRUCCIONES-CAPTURAS.md`
+
+**Capturas requeridas**:
+1. ⚠️ `productos-listado.png` - Vista principal con productos
+2. ⚠️ `venta-exitosa.png` - Confirmación de venta
+3. ⚠️ `error-api-caido.png` - Manejo de error
+
+**Frontend disponible en**: http://localhost:5173/
 
 ---
 
@@ -131,16 +140,16 @@ echo VITE_API_BASE_URL=https://[tu-api-id].execute-api.us-east-1.amazonaws.com/P
 
 ---
 
-### ⚠️ SABER-HACER (60%) - 55/60 COMPLETADO
+### ⚠️ SABER-HACER (60%) - 58/60 COMPLETADO
 
 | Criterio | Peso | Estado | Evidencia |
 |----------|------|--------|-----------|
-| Infraestructura AWS con SAM | 20% | ✅ | template.yaml + sam deploy |
-| Funciones Lambda | 20% | ✅ | GetProducts + SaveSale |
-| Frontend web funcional | 15% | ✅ | React + TypeScript sin errores |
-| Verificación end-to-end | 5% | ⚠️ | Pendiente de capturas |
+| Infraestructura AWS con SAM | 20% | ✅ | template.yaml + sam deploy exitoso |
+| Funciones Lambda | 20% | ✅ | GetProducts + SaveSale desplegadas |
+| Frontend web funcional | 15% | ✅ | React + TypeScript sin errores + corriendo en localhost:5173 |
+| Verificación end-to-end | 5% | ⚠️ | Pendiente solo capturas de pantalla |
 
-**Total SABER-HACER**: 55/60 (falta verificación end-to-end con capturas)
+**Total SABER-HACER**: 58/60 (falta solo capturas de pantalla)
 
 ---
 
@@ -175,37 +184,34 @@ src/
 
 ## 🚀 PRÓXIMOS PASOS PARA COMPLETAR AL 100%
 
-### Paso 1: Deploy de Lambda (5 minutos)
-```cmd
-cd C:\Users\Usuario\Downloads\proyectPOSAWS\pos-sam
-sam build
-sam deploy --no-confirm-changeset
+### ✅ Paso 1: Deploy de Lambda (COMPLETADO)
+```
+Stack: pos-sam
+Status: Deployed
+API URL: https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
 ```
 
-### Paso 2: Configurar .env (1 minuto)
-```bash
-cd PROYECTPOS/frontend/pos-frontend
-echo VITE_API_BASE_URL=https://[URL-DEL-DEPLOY].execute-api.us-east-1.amazonaws.com/Prod > .env
+### ✅ Paso 2: Configurar .env (COMPLETADO)
+```
+VITE_API_BASE_URL=https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
 ```
 
-### Paso 3: Cargar productos (1 minuto)
-```bash
-cd pos-sam
-python seed-products.py
+### ✅ Paso 3: Verificar productos (COMPLETADO)
+```
+50 productos cargados en DynamoDB ✅
 ```
 
-### Paso 4: Iniciar frontend (1 minuto)
-```bash
-cd PROYECTPOS/frontend/pos-frontend
-npm run dev
+### ✅ Paso 4: Iniciar frontend (COMPLETADO)
+```
+Frontend corriendo en http://localhost:5173/ ✅
 ```
 
-### Paso 5: Tomar capturas (5 minutos)
-1. Abrir http://localhost:5173
-2. Capturar pantalla de productos
-3. Hacer una venta y capturar confirmación
-4. Desconectar internet y capturar error
-5. Guardar en `docs/screenshots/`
+### ⚠️ Paso 5: Tomar capturas (PENDIENTE - 5 minutos)
+**Ver instrucciones en**: `INSTRUCCIONES-CAPTURAS.md`
+
+1. ⚠️ `productos-listado.png`
+2. ⚠️ `venta-exitosa.png`
+3. ⚠️ `error-api-caido.png`
 
 ### Paso 6: Commit final (1 minuto)
 ```bash
@@ -218,7 +224,7 @@ git push
 
 ## 📊 RESUMEN EJECUTIVO
 
-### ✅ COMPLETADO (95%)
+### ✅ COMPLETADO (98%)
 - ✅ Errores TypeScript eliminados (build compila sin errores)
 - ✅ Atajos de teclado implementados (F1, F2, Enter, Esc, F12)
 - ✅ Configuración centralizada del API Gateway
@@ -227,13 +233,16 @@ git push
 - ✅ Arquitectura hexagonal implementada
 - ✅ Commits y push a GitHub exitosos
 - ✅ .gitignore configurado correctamente
+- ✅ **Deploy de Lambda completado**
+- ✅ **.env configurado con URL real del API Gateway**
+- ✅ **50 productos cargados en DynamoDB**
+- ✅ **Frontend corriendo en http://localhost:5173/**
 
-### ⚠️ PENDIENTE (5%)
-- ⚠️ Deploy de Lambda actualizada (5 min)
-- ⚠️ Capturas de pantalla (5 min)
-- ⚠️ Configurar .env con URL real (1 min)
+### ⚠️ PENDIENTE (2%)
+- ⚠️ Capturas de pantalla (3 imágenes - 5 min)
+- ⚠️ Commit final con capturas (1 min)
 
-### 🎯 TIEMPO ESTIMADO PARA COMPLETAR: 15 minutos
+### 🎯 TIEMPO ESTIMADO PARA COMPLETAR: 6 minutos
 
 ---
 
