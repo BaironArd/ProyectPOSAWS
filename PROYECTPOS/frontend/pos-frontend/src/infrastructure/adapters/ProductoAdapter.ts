@@ -16,10 +16,12 @@ import { API_BASE_URL } from '../../config';
 interface LambdaProducto {
   id: string;
   code: string;
-  name: string;
-  price: number;
-  stock_level: number;
-  low_stock_threshold: number;
+  producto: {
+    name: string;
+    price: number;
+    stock_level: number;
+    low_stock_threshold: number;
+  };
 }
 
 export class ProductoAdapter implements IProductoPort {
@@ -40,9 +42,9 @@ export class ProductoAdapter implements IProductoPort {
     // Mapear al formato que espera el store
     return data.data.map((p) => ({
       id: parseInt(p.id, 10) || hashCode(p.id), // Lambda usa UUID, store espera number
-      nombre: p.name,
-      precio: p.price,
-      stock: p.stock_level,
+      nombre: p.producto.name,
+      precio: p.producto.price,
+      stock: p.producto.stock_level,
       activo: true,
       // Guardamos el id original como string en un campo extra para la venta
       _uuid: p.id,
