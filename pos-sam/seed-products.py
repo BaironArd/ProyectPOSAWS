@@ -2,14 +2,16 @@
 seed-products.py
 Carga productos de prueba en la tabla ProductosTable de DynamoDB.
 
-Estructura de cada item (exactamente como pide el profesor):
+Estructura de cada item (formato que lee la Lambda Java via DynamoDbBean):
 {
-    "id":                 String (PK - UUID),
-    "code":               String (GSI code-index),
-    "name":               String,
-    "price":              Number,
-    "stock_level":        Number,
-    "low_stock_threshold": Number
+    "id":   String (PK - UUID),
+    "code": String (GSI code-index),
+    "producto": {
+        "name":               String,
+        "price":              Number,
+        "stock_level":        Number,
+        "low_stock_threshold": Number
+    }
 }
 
 Uso:
@@ -133,12 +135,14 @@ def seed_products():
         for p in PRODUCTS:
             try:
                 item = {
-                    "id":                  str(uuid.uuid4()),
-                    "code":                p["code"],
-                    "name":                p["name"],
-                    "price":               Decimal(str(p["price"])),
-                    "stock_level":         p["stock"],
-                    "low_stock_threshold": p["threshold"]
+                    "id":   str(uuid.uuid4()),
+                    "code": p["code"],
+                    "producto": {
+                        "name":               p["name"],
+                        "price":              Decimal(str(p["price"])),
+                        "stock_level":        p["stock"],
+                        "low_stock_threshold": p["threshold"]
+                    }
                 }
                 batch.put_item(Item=item)
                 print(f"  ✓ [{p['code']}] {p['name']} - ${p['price']:,}")

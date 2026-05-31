@@ -7,12 +7,9 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -54,21 +51,11 @@ public class ProductRepository {
                 .collect(Collectors.toList());
     }
 
-    /** Busca por nombre (contains, case-insensitive) usando Scan. */
+    /** Busca por nombre (contains, case-insensitive) usando Scan + filtro en memoria. */
     public List<ProductRecord> findByName(String name) {
         String lower = name.toLowerCase();
-        // DynamoDB no soporta case-insensitive nativo; filtramos en memoria tras el scan
-        ScanEnhancedRequest req = ScanEnhancedRequest.builder()
-                .filterExpression(
-                        software.amazon.awssdk.enhanced.dynamodb.Expression.builder()
-                                .expression("contains(#prod.#n, :name)")
-                                .expressionNames(Map.of("#prod", "producto", "#n", "name"))
-                                .expressionValues(Map.of(
-                                        ":name", AttributeValue.builder().s(lower).build()))
-                                .build())
-                .build();
-
-        return table.scan(req).stream()
+        // Scan completo y filtrado en memoria (case-insensitive)
+        return table.scan().stream()
                 .flatMap(p -> p.items().stream())
                 .filter(r -> r.getProducto() != null
                         && r.getProducto().getName() != null

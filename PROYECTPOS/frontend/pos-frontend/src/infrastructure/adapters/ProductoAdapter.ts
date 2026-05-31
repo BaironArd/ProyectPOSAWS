@@ -19,8 +19,8 @@ interface LambdaProducto {
   producto: {
     name: string;
     price: number;
-    stock_level: number;
-    low_stock_threshold: number;
+    stockLevel: number;        // Jackson serializa el getter getStockLevel() → stockLevel
+    lowStockThreshold: number; // Jackson serializa getLowStockThreshold() → lowStockThreshold
   };
 }
 
@@ -44,7 +44,7 @@ export class ProductoAdapter implements IProductoPort {
       id: parseInt(p.id, 10) || hashCode(p.id), // Lambda usa UUID, store espera number
       nombre: p.producto.name,
       precio: p.producto.price,
-      stock: p.producto.stock_level,
+      stock: p.producto.stockLevel,
       activo: true,
       // Guardamos el id original como string en un campo extra para la venta
       _uuid: p.id,
