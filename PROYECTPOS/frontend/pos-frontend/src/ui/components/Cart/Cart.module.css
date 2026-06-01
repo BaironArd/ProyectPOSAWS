@@ -54,6 +54,14 @@
   vertical-align: middle;
 }
 
+.selectedRow {
+  background: #eef2ff;
+}
+
+.selectedRow td {
+  border-color: #c7d2fe;
+}
+
 .cantidadControles {
   display: flex;
   align-items: center;

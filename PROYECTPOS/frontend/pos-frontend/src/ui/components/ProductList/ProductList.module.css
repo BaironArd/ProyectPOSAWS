@@ -18,6 +18,13 @@
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   gap: 1rem;
+  transition: all 0.2s;
+}
+
+.card.selected {
+  border-color: #4f46e5;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px #4f46e5;
 }
 
 .info {

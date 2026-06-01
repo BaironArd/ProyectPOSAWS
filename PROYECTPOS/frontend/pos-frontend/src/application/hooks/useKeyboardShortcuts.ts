@@ -2,24 +2,33 @@ import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 
 /**
- * Hook para atajos de teclado estándar POS
+ * Hook para atajos de teclado completos del sistema POS
  * 
  * Atajos implementados:
- * - F1 o / → Enfocar buscador
- * - F2 → Ir al panel de pago (si hay items en carrito)
- * - Enter → Confirmar venta (si está en panel de pago)
- * - Escape → Limpiar búsqueda / cancelar pago
+ * - F3 o Ctrl+F → Enfocar buscador
+ * - F9 → Confirmar venta (si está en panel de pago)
+ * - F10 → Abrir historial (TODO: cuando esté implementado)
  * - F12 → Nueva venta
+ * - Escape → Limpiar búsqueda / cancelar pago
+ * - ↑/↓ → Navegar productos (manejado en ProductList)
+ * - Enter → Agregar producto seleccionado (manejado en ProductList)
+ * - +/- → Ajustar cantidades (manejado en Cart)
+ * - Delete → Eliminar del carrito (manejado en Cart)
  */
 export function useKeyboardShortcuts() {
   const { estado, carrito, resetVenta, setEstado } = usePOSStore();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // F1 o / → Enfocar buscador
-      if (e.key === 'F1' || e.key === '/') {
+      // Prevenir comportamiento por defecto de teclas de función
+      if (e.key.startsWith('F') && e.key.length <= 3) {
         e.preventDefault();
-        const searchInput = document.querySelector<HTMLInputElement>('input[type="search"], input[placeholder*="Buscar"]');
+      }
+
+      // F3 o Ctrl+F → Enfocar buscador
+      if (e.key === 'F3' || (e.ctrlKey && e.key === 'f')) {
+        e.preventDefault();
+        const searchInput = document.querySelector<HTMLInputElement>('input[type="text"], input[placeholder*="Buscar"]');
         if (searchInput) {
           searchInput.focus();
           searchInput.select();
@@ -27,22 +36,30 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // F2 → Ir al panel de pago (si hay items en carrito)
-      if (e.key === 'F2') {
+      // F9 → Confirmar venta (si está en panel de pago)
+      if (e.key === 'F9') {
         e.preventDefault();
-        if (carrito.length > 0 && estado === 'CARRITO_ACTIVO') {
-          setEstado('CALCULANDO_PAGO');
+        if (estado === 'CALCULANDO_PAGO') {
+          const confirmButton = document.querySelector<HTMLButtonElement>('button[type="submit"]');
+          if (confirmButton && !confirmButton.disabled) {
+            confirmButton.click();
+          }
         }
         return;
       }
 
-      // Enter → Confirmar venta (si está en panel de pago)
-      if (e.key === 'Enter' && estado === 'CALCULANDO_PAGO') {
-        // El botón de confirmar venta manejará la lógica
-        const confirmButton = document.querySelector<HTMLButtonElement>('button[type="submit"]');
-        if (confirmButton && !confirmButton.disabled) {
-          confirmButton.click();
-        }
+      // F10 → Abrir historial
+      if (e.key === 'F10') {
+        e.preventDefault();
+        // TODO: Implementar cuando esté el componente de historial
+        console.log('F10: Abrir historial (pendiente de implementar)');
+        return;
+      }
+
+      // F12 → Nueva venta
+      if (e.key === 'F12') {
+        e.preventDefault();
+        resetVenta();
         return;
       }
 
@@ -52,19 +69,12 @@ export function useKeyboardShortcuts() {
         if (estado === 'CALCULANDO_PAGO') {
           setEstado('CARRITO_ACTIVO');
         } else if (estado === 'BUSCANDO' || estado === 'RESULTADOS') {
-          const searchInput = document.querySelector<HTMLInputElement>('input[type="search"], input[placeholder*="Buscar"]');
+          const searchInput = document.querySelector<HTMLInputElement>('input[type="text"], input[placeholder*="Buscar"]');
           if (searchInput) {
             searchInput.value = '';
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
           }
         }
-        return;
-      }
-
-      // F12 → Nueva venta
-      if (e.key === 'F12') {
-        e.preventDefault();
-        resetVenta();
         return;
       }
     }
