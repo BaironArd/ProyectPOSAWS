@@ -19,10 +19,10 @@ const TRANSICIONES_VALIDAS: Partial<Record<EstadoUI, EstadoUI[]>> = {
   BUSCANDO:         ['RESULTADOS', 'IDLE', 'ERROR'],
   RESULTADOS:       ['CARRITO_ACTIVO', 'BUSCANDO', 'IDLE', 'ERROR'],
   CARRITO_ACTIVO:   ['CALCULANDO_PAGO', 'RESULTADOS', 'ERROR'],
-  CALCULANDO_PAGO:  ['PROCESANDO', 'CARRITO_ACTIVO', 'ERROR'],
+  CALCULANDO_PAGO:  ['PROCESANDO', 'CARRITO_ACTIVO', 'VENTA_COMPLETA', 'ERROR'],
   PROCESANDO:       ['VENTA_COMPLETA', 'ERROR'],
   VENTA_COMPLETA:   ['IDLE', 'ERROR'],
-  ERROR:            ['IDLE'],
+  ERROR:            ['IDLE', 'BUSCANDO', 'RESULTADOS', 'CARRITO_ACTIVO', 'CALCULANDO_PAGO'],
 };
 
 function transicionValida(desde: EstadoUI, hacia: EstadoUI): boolean {
@@ -47,6 +47,7 @@ const estadoInicial: POSState = {
   ventaIdActual:   null,
   datosRecibo:     null,
   recibosGuardados:{},
+  resetCount:      0,
 };
 
 // ---------------------------------------------------------------------------
@@ -57,8 +58,8 @@ interface POSActions {
   setQuery:          (query: string) => void;
   setProductos:      (productos: Producto[]) => void;
   agregarAlCarrito:  (producto: Producto) => void;
-  modificarCantidad: (productoId: number, cantidad: number) => void;
-  eliminarDelCarrito:(productoId: number) => void;
+  modificarCantidad: (productoId: string, cantidad: number) => void;
+  eliminarDelCarrito:(productoId: string) => void;
   setMontoPagado:    (monto: number) => void;
   setMetodoPago:     (metodo: MetodoPago) => void;
   agregarPago:       (pago: PagoItem) => void;
@@ -107,7 +108,7 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
       nuevoCarrito = [
         ...carrito,
         {
-          productoId:      producto.id,
+          productoId:      producto.id,  // Ya es UUID string
           nombre:          producto.nombre,
           cantidad:        1,
           precioUnitario:  producto.precio,
@@ -167,7 +168,7 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
   setDatosRecibo:   (datos)   => set({ datosRecibo: datos }),
   guardarRecibo:    (datos)   => set((s) => ({ recibosGuardados: { ...s.recibosGuardados, [datos.ventaId]: datos } })),
 
-  resetVenta: () => set({
+  resetVenta: () => set((s) => ({
     carrito:     [],
     resumen:     { subtotal: 0, iva: 0, total: 0 },
     query:       '',
@@ -179,7 +180,8 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
     ventaIdActual: null,
     datosRecibo:   null,
     estado:        'IDLE',
-  }),
+    resetCount:    s.resetCount + 1,  // fuerza re-ejecución de useSearch
+  })),
 
   irAIdle: () => set({
     carrito:     [],
@@ -195,6 +197,12 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
     // datosRecibo se conserva para mostrar el cambio
   }),
 
-  setError:   (error) => set({ error, estado: 'ERROR' }),
-  clearError: ()      => set((s) => ({ error: null, estado: s.estadoPrevio ?? 'IDLE', estadoPrevio: null })),
+  setError:   (error) => set((s) => ({ error, estado: 'ERROR', estadoPrevio: s.estado })),
+  clearError: () => set((s) => {
+    // Si el estado previo era PROCESANDO, volver a CALCULANDO_PAGO para poder reintentar
+    const destino: EstadoUI =
+      s.estadoPrevio === 'PROCESANDO' ? 'CALCULANDO_PAGO'
+      : s.estadoPrevio ?? 'IDLE';
+    return { error: null, estado: destino, estadoPrevio: null };
+  }),
 }));

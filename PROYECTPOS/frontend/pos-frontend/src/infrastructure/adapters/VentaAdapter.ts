@@ -23,7 +23,7 @@ export class VentaAdapter implements IVentaPort {
                    : 'CASH',
       amountPaid: payload.montoPagado,
       items: payload.carrito.map(i => ({
-        productId:  String(i.productoId),
+        productId:  i.productoId,  // Ya es UUID string
         name:       i.nombre,
         quantity:   i.cantidad,
         unitPrice:  i.precioUnitario,

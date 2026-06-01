@@ -23,7 +23,7 @@ export interface PagoItem {
 }
 
 export interface ItemCarrito {
-  productoId: number;
+  productoId: string;      // UUID de DynamoDB
   nombre: string;
   cantidad: number;
   precioUnitario: number;
@@ -43,7 +43,7 @@ export interface ErrorUI {
 }
 
 export interface Producto {
-  id: number;
+  id: string;           // UUID de DynamoDB
   nombre: string;
   precio: number;
   stock: number;
@@ -78,4 +78,5 @@ export interface POSState {
   ventaIdActual: string | null;
   datosRecibo: DatosRecibo | null;
   recibosGuardados: Record<string, DatosRecibo>;
+  resetCount: number;
 }

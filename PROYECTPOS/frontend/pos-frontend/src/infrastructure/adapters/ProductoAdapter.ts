@@ -27,9 +27,16 @@ interface LambdaProducto {
 export class ProductoAdapter implements IProductoPort {
   async buscar(query: string): Promise<Producto[]> {
     // Si la query está vacía, traer todos
-    const url = query.trim()
-      ? `${API_BASE_URL}/products?type=name&q=${encodeURIComponent(query)}`
-      : `${API_BASE_URL}/products?type=all`;
+    // Si contiene '-' es un código de producto (ej. LAP-001), usar type=code
+    const trimmed = query.trim();
+    let url: string;
+    if (!trimmed) {
+      url = `${API_BASE_URL}/products?type=all`;
+    } else if (trimmed.includes('-')) {
+      url = `${API_BASE_URL}/products?type=code&q=${encodeURIComponent(trimmed)}`;
+    } else {
+      url = `${API_BASE_URL}/products?type=name&q=${encodeURIComponent(trimmed)}`;
+    }
 
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
@@ -41,25 +48,13 @@ export class ProductoAdapter implements IProductoPort {
 
     // Mapear al formato que espera el store
     return data.data.map((p) => ({
-      id: parseInt(p.id, 10) || hashCode(p.id), // Lambda usa UUID, store espera number
+      id: p.id,  // Usar UUID directamente sin conversión
       nombre: p.producto.name,
       precio: p.producto.price,
       stock: p.producto.stockLevel,
       activo: true,
-      // Guardamos el id original como string en un campo extra para la venta
-      _uuid: p.id,
-    } as Producto & { _uuid: string }));
+    } as Producto));
   }
-}
-
-/** Convierte un UUID string a un número entero estable para el store. */
-function hashCode(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
 }
 
 export const productoAdapter = new ProductoAdapter();

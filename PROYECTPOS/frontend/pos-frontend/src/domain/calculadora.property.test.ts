@@ -4,7 +4,7 @@ import { calcularResumen, calcularCambio, calcularSubtotal, IVA_RATE } from './c
 import type { ItemCarrito } from './types/POSState';
 
 const itemArb = fc.record({
-  productoId: fc.integer({ min: 1, max: 9999 }),
+  productoId: fc.uuid(),  // Usar UUID string
   nombre: fc.string({ minLength: 1, maxLength: 20 }),
   cantidad: fc.integer({ min: 1, max: 100 }),
   precioUnitario: fc.integer({ min: 0, max: 10_000_000 }),

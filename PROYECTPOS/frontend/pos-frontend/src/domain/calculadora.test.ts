@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { calcularResumen, calcularCambio, calcularSubtotal, IVA_RATE } from './calculadora';
 import type { ItemCarrito } from './types/POSState';
 
-function item(productoId: number, precio: number, cantidad: number): ItemCarrito {
+function item(productoId: string, precio: number, cantidad: number): ItemCarrito {
   return { productoId, nombre: `P${productoId}`, cantidad, precioUnitario: precio, subtotal: precio * cantidad, stockDisponible: 100 };
 }
 
@@ -26,14 +26,14 @@ describe('calcularResumen', () => {
   });
 
   it('calcula correctamente con un ítem', () => {
-    const r = calcularResumen([item(1, 100000, 1)]);
+    const r = calcularResumen([item('p-1', 100000, 1)]);
     expect(r.subtotal).toBe(100000);
     expect(r.iva).toBe(Math.round(100000 * IVA_RATE));
     expect(r.total).toBe(r.subtotal + r.iva);
   });
 
   it('calcula correctamente con múltiples ítems', () => {
-    const carrito = [item(1, 30000, 2), item(2, 55000, 1)];
+    const carrito = [item('p-1', 30000, 2), item('p-2', 55000, 1)];
     const r = calcularResumen(carrito);
     expect(r.subtotal).toBe(115000);
     expect(r.iva).toBe(Math.round(115000 * IVA_RATE));
@@ -42,9 +42,9 @@ describe('calcularResumen', () => {
 
   it('redondea el IVA al peso', () => {
     // subtotal = 1 → iva = Math.round(0.19) = 0
-    expect(calcularResumen([item(1, 1, 1)]).iva).toBe(0);
+    expect(calcularResumen([item('p-1', 1, 1)]).iva).toBe(0);
     // subtotal = 10 → iva = Math.round(1.9) = 2
-    expect(calcularResumen([item(1, 10, 1)]).iva).toBe(2);
+    expect(calcularResumen([item('p-1', 10, 1)]).iva).toBe(2);
   });
 });
 

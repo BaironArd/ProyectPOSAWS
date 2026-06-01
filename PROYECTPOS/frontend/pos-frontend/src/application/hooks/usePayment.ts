@@ -33,7 +33,9 @@ export function usePayment(ventaPort: IVentaPort) {
     if (!metodoPago) return;
 
     setProcesando(true);
-    setEstado('PROCESANDO');
+    // NO cambiamos el estado a PROCESANDO aquí — eso bloquea la máquina de estados.
+    // El estado permanece en CALCULANDO_PAGO durante la petición.
+    // Solo usamos el flag local `procesando` para deshabilitar el botón.
 
     try {
       // Calcular monto real a enviar según método de pago
