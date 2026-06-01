@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
+import { useFocusManager } from '@application/hooks/useFocusManager';
 import { usePayment } from '@application/hooks/usePayment';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
 import type { MetodoPago } from '@domain/types/POSState';
@@ -29,14 +30,49 @@ export function PaymentPanel({ ventaPort }: Props) {
   const eliminarPago   = usePOSStore((s) => s.eliminarPago);
   const actualizarPago = usePOSStore((s) => s.actualizarPago);
 
+  const activeSection = useFocusManager((s) => s.activeSection);
+  const setActiveSection = useFocusManager((s) => s.setActiveSection);
+
   const { confirmarVenta, procesando, puedeConfirmar } = usePayment(ventaPort);
 
-  // Seleccionar EFECTIVO por defecto al abrir el panel
+  // Activar sección al hacer clic
+  const handleClick = () => {
+    setActiveSection('payment');
+  };
+
+  // Navegación con teclado en panel de pago
   useEffect(() => {
-    if (estado === 'CALCULANDO_PAGO' && !metodoPago) {
-      setMetodoPago('EFECTIVO');
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (estado !== 'CALCULANDO_PAGO') return;
+      if (activeSection !== 'payment') return;
+
+      // Enter → Confirmar venta
+      if (e.key === 'Enter') {
+        // Solo si no estamos en un input
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT') return;
+        
+        e.preventDefault();
+        if (puedeConfirmar && !procesando) {
+          confirmarVenta();
+        }
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [estado, activeSection, puedeConfirmar, procesando, confirmarVenta]);
+
+  // Seleccionar EFECTIVO por defecto al abrir el panel y activar sección
+  useEffect(() => {
+    if (estado === 'CALCULANDO_PAGO') {
+      if (!metodoPago) {
+        setMetodoPago('EFECTIVO');
+      }
+      setActiveSection('payment'); // Auto-activar sección de pago
     }
-  }, [estado, metodoPago, setMetodoPago]);
+  }, [estado, metodoPago, setMetodoPago, setActiveSection]);
 
   // Para débito/crédito/transferencia: el monto pagado ES el total exacto
   useEffect(() => {
@@ -62,7 +98,7 @@ export function PaymentPanel({ ventaPort }: Props) {
   const tieneEfectivoMixto = esMixto && pagos.some(p => p.metodo === 'EFECTIVO');
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} onClick={handleClick}>
       <h3 className={styles.titulo}>Método de pago</h3>
 
       {/* ── Selector de método ── */}

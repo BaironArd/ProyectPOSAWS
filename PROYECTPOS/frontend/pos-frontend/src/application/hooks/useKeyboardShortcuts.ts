@@ -1,22 +1,24 @@
 import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
+import { useFocusManager } from './useFocusManager';
 
 /**
  * Hook para atajos de teclado completos del sistema POS
  * 
  * Atajos implementados:
  * - F3 o Ctrl+F → Enfocar buscador
- * - F9 → Confirmar venta (si está en panel de pago)
+ * - ←/→ → Cambiar entre secciones (Productos ↔ Carrito ↔ Pago)
  * - F10 → Abrir historial (TODO: cuando esté implementado)
  * - F12 → Nueva venta
  * - Escape → Limpiar búsqueda / cancelar pago
- * - ↑/↓ → Navegar productos (manejado en ProductList)
- * - Enter → Agregar producto seleccionado (manejado en ProductList)
+ * - ↑/↓ → Navegar en sección activa (manejado en cada componente)
+ * - Enter → Acción contextual según sección activa
  * - +/- → Ajustar cantidades (manejado en Cart)
  * - Delete → Eliminar del carrito (manejado en Cart)
  */
 export function useKeyboardShortcuts() {
   const { estado, carrito, resetVenta, setEstado } = usePOSStore();
+  const { moveLeft, moveRight } = useFocusManager();
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -36,14 +38,24 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // F9 → Confirmar venta (si está en panel de pago)
-      if (e.key === 'F9') {
-        e.preventDefault();
-        if (estado === 'CALCULANDO_PAGO') {
-          const confirmButton = document.querySelector<HTMLButtonElement>('button[type="submit"]');
-          if (confirmButton && !confirmButton.disabled) {
-            confirmButton.click();
-          }
+      // ← → Mover a sección izquierda
+      if (e.key === 'ArrowLeft') {
+        // Solo si no estamos en un input
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          moveLeft();
+        }
+        return;
+      }
+
+      // → → Mover a sección derecha
+      if (e.key === 'ArrowRight') {
+        // Solo si no estamos en un input
+        const target = e.target as HTMLElement;
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          moveRight();
         }
         return;
       }
@@ -81,5 +93,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [estado, carrito, resetVenta, setEstado]);
+  }, [estado, carrito, resetVenta, setEstado, moveLeft, moveRight]);
 }

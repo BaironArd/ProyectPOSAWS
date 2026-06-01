@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import { useKeyboardShortcuts } from '@application/hooks/useKeyboardShortcuts';
+import { useFocusManager } from '@application/hooks/useFocusManager';
 
 import type { IProductoPort } from '@domain/ports/IProductoPort';
 import type { IVentaPort } from '@domain/ports/IVentaPort';
@@ -36,6 +37,8 @@ export function POSApp({ productoPort, ventaPort, impresionPort }: Props) {
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
   const irAIdle     = usePOSStore((s) => s.irAIdle);
   const resetVenta  = usePOSStore((s) => s.resetVenta);
+
+  const activeSection = useFocusManager((s) => s.activeSection);
 
   // Activar atajos de teclado estándar POS
   useKeyboardShortcuts();
@@ -92,11 +95,11 @@ export function POSApp({ productoPort, ventaPort, impresionPort }: Props) {
         {/* ── Panel principal: búsqueda + carrito ── */}
         {mostrarPanelVenta && (
           <div className={styles.flujoVenta}>
-            <div className={styles.columnaIzq}>
+            <div className={`${styles.columnaIzq} ${activeSection !== 'products' ? styles.inactive : ''}`}>
               <SearchBar productoPort={productoPort} />
               <ProductList />
             </div>
-            <div className={styles.columnaDer}>
+            <div className={`${styles.columnaDer} ${activeSection === 'products' ? styles.inactive : ''}`}>
               <Cart />
               <OrderSummary />
               <PaymentPanel ventaPort={ventaPort} />

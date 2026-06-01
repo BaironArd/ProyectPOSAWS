@@ -1,4 +1,5 @@
 import { usePOSStore } from '@application/store/usePOSStore';
+import { useFocusManager } from '@application/hooks/useFocusManager';
 import { formatearPrecio } from '@ui/utils/formato';
 import { useEffect, useState } from 'react';
 import styles from './Cart.module.css';
@@ -9,6 +10,9 @@ export function Cart() {
   const modificarCantidad = usePOSStore((s) => s.modificarCantidad);
   const eliminarDelCarrito = usePOSStore((s) => s.eliminarDelCarrito);
   const setEstado = usePOSStore((s) => s.setEstado);
+
+  const activeSection = useFocusManager((s) => s.activeSection);
+  const setActiveSection = useFocusManager((s) => s.setActiveSection);
 
   // Track selected item for keyboard navigation
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
@@ -22,16 +26,29 @@ export function Cart() {
     }
   }, [carrito.length, selectedIndex]);
 
-  // Keyboard shortcuts for cart items: +, -, Delete
+  // Activar sección al hacer clic
+  const handleClick = () => {
+    setActiveSection('cart');
+  };
+
+  // Keyboard shortcuts for cart items: +, -, Delete, Enter
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle shortcuts when cart is active and not in read-only mode
+      // Only handle shortcuts when cart is active, not in read-only mode, AND this section is focused
       if (estado !== 'CARRITO_ACTIVO' || carrito.length === 0) return;
+      if (activeSection !== 'cart') return; // ← CLAVE: solo si esta sección está activa
 
       const selectedItem = carrito[selectedIndex];
       if (!selectedItem) return;
 
       switch (e.key) {
+        case 'Enter':
+          // Enter en carrito → Proceder al pago
+          e.preventDefault();
+          setEstado('CALCULANDO_PAGO');
+          setActiveSection('payment'); // Cambiar foco a pago
+          break;
+
         case '+':
         case '=': // Also handle = key (same key as + without shift)
           e.preventDefault();
@@ -68,13 +85,13 @@ export function Cart() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [carrito, selectedIndex, estado, modificarCantidad, eliminarDelCarrito]);
+  }, [carrito, selectedIndex, estado, modificarCantidad, eliminarDelCarrito, activeSection, setEstado, setActiveSection]);
 
   // No mostrar controles de edición durante el pago o procesando
   const soloLectura = estado === 'CALCULANDO_PAGO' || estado === 'PROCESANDO';
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} onClick={handleClick}>
       <h3 className={styles.titulo}>
         Carrito
         {carrito.length > 0 && (
@@ -100,8 +117,8 @@ export function Cart() {
               {carrito.map((item, index) => (
                 <tr 
                   key={item.productoId}
-                  className={index === selectedIndex && estado === 'CARRITO_ACTIVO' ? styles.selectedRow : ''}
-                  data-selected={index === selectedIndex && estado === 'CARRITO_ACTIVO'}
+                  className={index === selectedIndex && estado === 'CARRITO_ACTIVO' && activeSection === 'cart' ? styles.selectedRow : ''}
+                  data-selected={index === selectedIndex && estado === 'CARRITO_ACTIVO' && activeSection === 'cart'}
                 >
                   <td>{item.nombre}</td>
                   <td>{formatearPrecio(item.precioUnitario)}</td>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
+import { useFocusManager } from '@application/hooks/useFocusManager';
 import { formatearPrecio } from '@ui/utils/formato';
 import styles from './ProductList.module.css';
 
@@ -9,6 +10,9 @@ export function ProductList() {
   const estado = usePOSStore((s) => s.estado);
   const agregarAlCarrito = usePOSStore((s) => s.agregarAlCarrito);
   
+  const activeSection = useFocusManager((s) => s.activeSection);
+  const setActiveSection = useFocusManager((s) => s.setActiveSection);
+  
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -17,12 +21,18 @@ export function ProductList() {
     setSelectedIndex(0);
   }, [productos]);
 
+  // Activar sección al hacer clic
+  const handleClick = () => {
+    setActiveSection('products');
+  };
+
   // Manejar navegación con teclado
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      // Solo manejar teclas si estamos en la vista de resultados
+      // Solo manejar teclas si estamos en la vista de resultados Y esta sección está activa
       if (estado !== 'RESULTADOS' && estado !== 'CARRITO_ACTIVO') return;
       if (productos.length === 0) return;
+      if (activeSection !== 'products') return; // ← CLAVE: solo si esta sección está activa
 
       // Flecha arriba
       if (e.key === 'ArrowUp') {
@@ -40,12 +50,6 @@ export function ProductList() {
 
       // Enter - agregar producto seleccionado
       if (e.key === 'Enter') {
-        // Solo si no estamos en un input
-        const activeElement = document.activeElement;
-        if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'BUTTON') {
-          return;
-        }
-        
         e.preventDefault();
         const productoSeleccionado = productos[selectedIndex];
         if (productoSeleccionado && productoSeleccionado.stock > 0) {
@@ -57,17 +61,17 @@ export function ProductList() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [estado, productos, selectedIndex, agregarAlCarrito]);
+  }, [estado, productos, selectedIndex, agregarAlCarrito, activeSection]);
 
   // Scroll automático al producto seleccionado
   useEffect(() => {
-    if (listRef.current) {
+    if (listRef.current && activeSection === 'products') {
       const selectedElement = listRef.current.children[selectedIndex] as HTMLElement;
       if (selectedElement) {
         selectedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
     }
-  }, [selectedIndex]);
+  }, [selectedIndex, activeSection]);
 
   if (estado !== 'RESULTADOS' && estado !== 'CARRITO_ACTIVO') return null;
 
@@ -80,7 +84,12 @@ export function ProductList() {
   }
 
   return (
-    <ul ref={listRef} className={styles.lista} aria-label="Resultados de búsqueda">
+    <ul 
+      ref={listRef} 
+      className={styles.lista} 
+      aria-label="Resultados de búsqueda"
+      onClick={handleClick}
+    >
       {productos.map((producto, index) => (
         <li 
           key={producto.id} 
