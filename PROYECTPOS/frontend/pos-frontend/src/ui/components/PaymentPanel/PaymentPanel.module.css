@@ -42,6 +42,12 @@
   font-weight: 600;
 }
 
+.btnMetodo.navegando {
+  border-color: #818cf8;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px #818cf8;
+}
+
 .btnMetodo:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -102,6 +108,32 @@
 .input:focus {
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+}
+
+.inputFocused {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px #818cf8;
+}
+
+.selectFocused {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 2px #818cf8;
+  outline: none;
+}
+
+.btnDeleteFocused {
+  background: #fee2e2;
+  outline: 2px solid #ef4444;
+}
+
+.btnAgregarFocused {
+  background: #eef2ff;
+  border-color: #4f46e5;
+  border-style: solid;
+}
+
+.btnConfirmarFocused {
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
 }
 
 .cambio {

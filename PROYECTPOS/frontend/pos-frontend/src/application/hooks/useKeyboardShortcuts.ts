@@ -40,6 +40,9 @@ export function useKeyboardShortcuts() {
 
       // ← → Mover a sección izquierda
       if (e.key === 'ArrowLeft') {
+        // No permitir navegación si estamos en panel de pago
+        if (estado === 'CALCULANDO_PAGO' || estado === 'PROCESANDO') return;
+        
         // Solo si no estamos en un input
         const target = e.target as HTMLElement;
         if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
@@ -51,6 +54,9 @@ export function useKeyboardShortcuts() {
 
       // → → Mover a sección derecha
       if (e.key === 'ArrowRight') {
+        // No permitir navegación si estamos en panel de pago
+        if (estado === 'CALCULANDO_PAGO' || estado === 'PROCESANDO') return;
+        
         // Solo si no estamos en un input
         const target = e.target as HTMLElement;
         if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
@@ -87,6 +93,13 @@ export function useKeyboardShortcuts() {
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
           }
         }
+        return;
+      }
+
+      // Enter en venta exitosa → Nueva venta
+      if (e.key === 'Enter' && estado === 'VENTA_COMPLETA') {
+        e.preventDefault();
+        resetVenta();
         return;
       }
     }

@@ -25,17 +25,15 @@ export const useFocusManager = create<FocusState>((set, get) => ({
     const { activeSection } = get();
     if (activeSection === 'cart') {
       set({ activeSection: 'products' });
-    } else if (activeSection === 'payment') {
-      set({ activeSection: 'cart' });
     }
+    // No hacer nada si estamos en products o payment
   },
 
   moveRight: () => {
     const { activeSection } = get();
     if (activeSection === 'products') {
       set({ activeSection: 'cart' });
-    } else if (activeSection === 'cart') {
-      set({ activeSection: 'payment' });
     }
+    // No hacer nada si estamos en cart o payment
   },
 }));

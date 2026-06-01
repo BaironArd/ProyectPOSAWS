@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import { useFocusManager } from '@application/hooks/useFocusManager';
 import { usePayment } from '@application/hooks/usePayment';
@@ -35,9 +35,59 @@ export function PaymentPanel({ ventaPort }: Props) {
 
   const { confirmarVenta, procesando, puedeConfirmar } = usePayment(ventaPort);
 
+  // Estado para navegación dentro del panel de pago
+  const [focusedElementIndex, setFocusedElementIndex] = useState(0);
+  const [metodoSeleccionado, setMetodoSeleccionado] = useState(false);
+
   // Activar sección al hacer clic
   const handleClick = () => {
     setActiveSection('payment');
+  };
+
+  // Calcular tipos de pago
+  const esMixto    = metodoPago === 'MIXTO';
+  const esEfectivo = metodoPago === 'EFECTIVO';
+  const esExacto   = !esEfectivo && !esMixto && metodoPago !== null;
+
+  // Resetear navegación cuando cambia el método o se abre el panel
+  useEffect(() => {
+    if (estado === 'CALCULANDO_PAGO') {
+      setFocusedElementIndex(0);
+      setMetodoSeleccionado(false);
+    }
+  }, [estado]);
+
+  // Calcular elementos navegables según el estado actual
+  const getNavigableElements = () => {
+    const elements: string[] = [];
+    
+    // Si no se ha seleccionado método, solo mostrar botones de método
+    if (!metodoSeleccionado) {
+      METODOS.forEach((m) => elements.push(`metodo-${m.value}`));
+      elements.push('metodo-MIXTO');
+      return elements;
+    }
+    
+    // Si ya se seleccionó método, mostrar elementos según el tipo
+    if (esEfectivo) {
+      elements.push('input-efectivo');
+      elements.push('btn-confirmar');
+    } else if (esMixto) {
+      pagos.forEach((_, idx) => {
+        elements.push(`pago-select-${idx}`);
+        elements.push(`pago-input-${idx}`);
+        elements.push(`pago-delete-${idx}`);
+      });
+      elements.push('btn-agregar-pago');
+      if (puedeConfirmar) {
+        elements.push('btn-confirmar');
+      }
+    } else if (esExacto) {
+      // Débito, crédito, transferencia → directo a confirmar
+      elements.push('btn-confirmar');
+    }
+    
+    return elements;
   };
 
   // Navegación con teclado en panel de pago
@@ -46,23 +96,82 @@ export function PaymentPanel({ ventaPort }: Props) {
       if (estado !== 'CALCULANDO_PAGO') return;
       if (activeSection !== 'payment') return;
 
-      // Enter → Confirmar venta
-      if (e.key === 'Enter') {
-        // Solo si no estamos en un input
-        const target = e.target as HTMLElement;
-        if (target.tagName === 'INPUT') return;
-        
+      const elements = getNavigableElements();
+      const currentElement = elements[focusedElementIndex];
+
+      // Backspace → Retroceder en navegación
+      if (e.key === 'Backspace') {
         e.preventDefault();
-        if (puedeConfirmar && !procesando) {
-          confirmarVenta();
+        
+        // Si estamos en la selección de método, no hacer nada
+        if (!metodoSeleccionado) return;
+        
+        // Si estamos en otros elementos, retroceder
+        if (focusedElementIndex > 0) {
+          setFocusedElementIndex((prev) => prev - 1);
+        } else {
+          // Si estamos en el primer elemento después de seleccionar método, volver a métodos
+          setMetodoSeleccionado(false);
+          setFocusedElementIndex(0);
         }
+        return;
+      }
+
+      // ↑ - Navegar arriba
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedElementIndex((prev) => (prev > 0 ? prev - 1 : elements.length - 1));
+        return;
+      }
+
+      // ↓ - Navegar abajo
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedElementIndex((prev) => (prev < elements.length - 1 ? prev + 1 : 0));
+        return;
+      }
+
+      // Enter - Acción según elemento enfocado
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        
+        // Si es un botón de método de pago
+        if (currentElement?.startsWith('metodo-')) {
+          const metodo = currentElement.replace('metodo-', '') as MetodoPago;
+          setMetodoPago(metodo);
+          setMetodoSeleccionado(true);
+          setFocusedElementIndex(0); // Resetear a primer elemento del siguiente grupo
+          return;
+        }
+        
+        // Si es el botón de agregar pago (mixto)
+        if (currentElement === 'btn-agregar-pago') {
+          agregarPago({ metodo: 'EFECTIVO', monto: 0 });
+          return;
+        }
+        
+        // Si es el botón de confirmar
+        if (currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+          confirmarVenta();
+          return;
+        }
+        
+        // Si es un input o select, dejar que el usuario interactúe
+        return;
+      }
+
+      // Delete - Eliminar pago en mixto
+      if (e.key === 'Delete' && currentElement?.startsWith('pago-delete-')) {
+        e.preventDefault();
+        const idx = parseInt(currentElement.replace('pago-delete-', ''));
+        eliminarPago(idx);
         return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [estado, activeSection, puedeConfirmar, procesando, confirmarVenta]);
+  }, [estado, activeSection, focusedElementIndex, metodoSeleccionado, metodoPago, pagos, puedeConfirmar, procesando, confirmarVenta, setMetodoPago, agregarPago, eliminarPago, esEfectivo, esMixto, esExacto]);
 
   // Seleccionar EFECTIVO por defecto al abrir el panel y activar sección
   useEffect(() => {
@@ -87,10 +196,6 @@ export function PaymentPanel({ ventaPort }: Props) {
 
   if (estado !== 'CALCULANDO_PAGO' && estado !== 'PROCESANDO') return null;
 
-  const esMixto    = metodoPago === 'MIXTO';
-  const esEfectivo = metodoPago === 'EFECTIVO';
-  const esExacto   = !esEfectivo && !esMixto && metodoPago !== null;
-
   // MIXTO
   const sumaPagos          = pagos.reduce((s, p) => s + p.monto, 0);
   const mixtoInsuficiente  = esMixto && sumaPagos < resumen.total;
@@ -103,19 +208,31 @@ export function PaymentPanel({ ventaPort }: Props) {
 
       {/* ── Selector de método ── */}
       <div className={styles.metodos}>
-        {METODOS.map((m) => (
-          <button
-            key={m.value}
-            className={`${styles.btnMetodo} ${metodoPago === m.value ? styles.activo : ''}`}
-            onClick={() => setMetodoPago(m.value)}
-            disabled={procesando}
-          >
-            {m.label}
-          </button>
-        ))}
+        {METODOS.map((m) => {
+          const elementId = `metodo-${m.value}`;
+          const isFocused = !metodoSeleccionado && getNavigableElements()[focusedElementIndex] === elementId;
+          return (
+            <button
+              key={m.value}
+              className={`${styles.btnMetodo} ${metodoPago === m.value ? styles.activo : ''} ${isFocused ? styles.navegando : ''}`}
+              onClick={() => {
+                setMetodoPago(m.value);
+                setMetodoSeleccionado(true);
+                setFocusedElementIndex(0);
+              }}
+              disabled={procesando}
+            >
+              {m.label}
+            </button>
+          );
+        })}
         <button
-          className={`${styles.btnMetodo} ${esMixto ? styles.activo : ''}`}
-          onClick={() => setMetodoPago('MIXTO')}
+          className={`${styles.btnMetodo} ${esMixto ? styles.activo : ''} ${!metodoSeleccionado && getNavigableElements()[focusedElementIndex] === 'metodo-MIXTO' ? styles.navegando : ''}`}
+          onClick={() => {
+            setMetodoPago('MIXTO');
+            setMetodoSeleccionado(true);
+            setFocusedElementIndex(0);
+          }}
           disabled={procesando}
         >
           🔀 Mixto
@@ -123,18 +240,23 @@ export function PaymentPanel({ ventaPort }: Props) {
       </div>
 
       {/* ── EFECTIVO: campo de monto + cambio ── */}
-      {esEfectivo && (
+      {esEfectivo && metodoSeleccionado && (
         <div className={styles.campoMonto}>
           <label className={styles.label}>Monto recibido</label>
           <input
-            type="number"
-            min={0}
+            type="text"
+            inputMode="decimal"
             value={montoPagado || ''}
             onChange={(e) => {
-              const val = parseFloat(e.target.value);
+              const val = parseFloat(e.target.value.replace(/[^0-9.]/g, ''));
               setMontoPagado(isNaN(val) || val < 0 ? 0 : val);
             }}
-            className={styles.input}
+            onFocus={() => {
+              const elements = getNavigableElements();
+              const inputIndex = elements.indexOf('input-efectivo');
+              if (inputIndex !== -1) setFocusedElementIndex(inputIndex);
+            }}
+            className={`${styles.input} ${getNavigableElements()[focusedElementIndex] === 'input-efectivo' ? styles.inputFocused : ''}`}
             placeholder={formatearPrecio(resumen.total)}
             disabled={procesando}
             autoFocus
@@ -148,7 +270,7 @@ export function PaymentPanel({ ventaPort }: Props) {
       )}
 
       {/* ── DÉBITO / CRÉDITO / TRANSFERENCIA: cobro exacto, sin campo ── */}
-      {esExacto && (
+      {esExacto && metodoSeleccionado && (
         <div className={styles.infoExacto}>
           <p className={styles.labelExacto}>Total a cobrar</p>
           <p className={styles.montoExacto}>{formatearPrecio(resumen.total)}</p>
@@ -161,46 +283,73 @@ export function PaymentPanel({ ventaPort }: Props) {
       )}
 
       {/* ── MIXTO: filas de pago ── */}
-      {esMixto && (
+      {esMixto && metodoSeleccionado && (
         <div className={styles.mixto}>
-          {pagos.map((pago, idx) => (
-            <div key={idx} className={styles.filaPago}>
-              <select
-                value={pago.metodo}
-                onChange={(e) =>
-                  actualizarPago(idx, { ...pago, metodo: e.target.value as Exclude<MetodoPago, 'MIXTO'> })
-                }
-                className={styles.selectMetodo}
-                disabled={procesando}
-              >
-                {METODOS.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={0}
-                value={pago.monto || ''}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  actualizarPago(idx, { ...pago, monto: isNaN(val) || val < 0 ? 0 : val });
-                }}
-                className={styles.inputMixto}
-                placeholder="0"
-                disabled={procesando}
-              />
-              <button
-                className={styles.btnEliminarPago}
-                onClick={() => eliminarPago(idx)}
-                disabled={procesando}
-                aria-label="Eliminar pago"
-              >✕</button>
-            </div>
-          ))}
+          {pagos.map((pago, idx) => {
+            const selectId = `pago-select-${idx}`;
+            const inputId = `pago-input-${idx}`;
+            const deleteId = `pago-delete-${idx}`;
+            const currentElement = getNavigableElements()[focusedElementIndex];
+            
+            return (
+              <div key={idx} className={styles.filaPago}>
+                <select
+                  value={pago.metodo}
+                  onChange={(e) =>
+                    actualizarPago(idx, { ...pago, metodo: e.target.value as Exclude<MetodoPago, 'MIXTO'> })
+                  }
+                  onFocus={() => {
+                    const elements = getNavigableElements();
+                    const selectIndex = elements.indexOf(selectId);
+                    if (selectIndex !== -1) setFocusedElementIndex(selectIndex);
+                  }}
+                  className={`${styles.selectMetodo} ${currentElement === selectId ? styles.selectFocused : ''}`}
+                  disabled={procesando}
+                >
+                  {METODOS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={pago.monto || ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value.replace(/[^0-9.]/g, ''));
+                    actualizarPago(idx, { ...pago, monto: isNaN(val) || val < 0 ? 0 : val });
+                  }}
+                  onFocus={() => {
+                    const elements = getNavigableElements();
+                    const inputIndex = elements.indexOf(inputId);
+                    if (inputIndex !== -1) setFocusedElementIndex(inputIndex);
+                  }}
+                  className={`${styles.inputMixto} ${currentElement === inputId ? styles.inputFocused : ''}`}
+                  placeholder="0"
+                  disabled={procesando}
+                />
+                <button
+                  className={`${styles.btnEliminarPago} ${currentElement === deleteId ? styles.btnDeleteFocused : ''}`}
+                  onClick={() => eliminarPago(idx)}
+                  onFocus={() => {
+                    const elements = getNavigableElements();
+                    const deleteIndex = elements.indexOf(deleteId);
+                    if (deleteIndex !== -1) setFocusedElementIndex(deleteIndex);
+                  }}
+                  disabled={procesando}
+                  aria-label="Eliminar pago"
+                >✕</button>
+              </div>
+            );
+          })}
 
           <button
-            className={styles.btnAgregarPago}
+            className={`${styles.btnAgregarPago} ${getNavigableElements()[focusedElementIndex] === 'btn-agregar-pago' ? styles.btnAgregarFocused : ''}`}
             onClick={() => agregarPago({ metodo: 'EFECTIVO', monto: 0 })}
+            onFocus={() => {
+              const elements = getNavigableElements();
+              const btnIndex = elements.indexOf('btn-agregar-pago');
+              if (btnIndex !== -1) setFocusedElementIndex(btnIndex);
+            }}
             disabled={procesando}
           >
             + Agregar pago
@@ -217,8 +366,13 @@ export function PaymentPanel({ ventaPort }: Props) {
       )}
 
       <button
-        className={styles.btnConfirmar}
+        className={`${styles.btnConfirmar} ${metodoSeleccionado && getNavigableElements()[focusedElementIndex] === 'btn-confirmar' ? styles.btnConfirmarFocused : ''}`}
         onClick={confirmarVenta}
+        onFocus={() => {
+          const elements = getNavigableElements();
+          const btnIndex = elements.indexOf('btn-confirmar');
+          if (btnIndex !== -1) setFocusedElementIndex(btnIndex);
+        }}
         disabled={!puedeConfirmar || procesando}
         aria-busy={procesando}
       >
