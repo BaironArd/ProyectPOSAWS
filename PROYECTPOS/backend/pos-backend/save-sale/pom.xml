@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.pos.aws</groupId>
-    <artifactId>productos-service</artifactId>
+    <groupId>com.pos.sam</groupId>
+    <artifactId>save-sale</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>productos-service</name>
-    <description>Microservicio Productos - AWS Lambda + DynamoDB</description>
+    <name>save-sale</name>
+    <description>Lambda SaveSaleFunction - Ventas, Pagos y Reportes del POS en DynamoDB</description>
 
     <properties>
         <java.version>21</java.version>
@@ -35,33 +35,24 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- AWS Lambda Core -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
             <version>${aws.lambda.java.core.version}</version>
         </dependency>
-
-        <!-- AWS Lambda Events (API Gateway proxy) -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-events</artifactId>
             <version>${aws.lambda.java.events.version}</version>
         </dependency>
-
-        <!-- AWS SDK v2 - DynamoDB -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb</artifactId>
         </dependency>
-
-        <!-- AWS SDK v2 - DynamoDB Enhanced Client -->
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>dynamodb-enhanced</artifactId>
         </dependency>
-
-        <!-- Jackson para serialización JSON -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -72,8 +63,6 @@
             <artifactId>jackson-datatype-jsr310</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-
-        <!-- Tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -82,13 +71,13 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
+            <artifactId>mockito-core</artifactId>
             <version>5.11.0</version>
             <scope>test</scope>
         </dependency>
@@ -105,7 +94,6 @@
                     <target>21</target>
                 </configuration>
             </plugin>
-            <!-- Shade plugin: empaqueta todas las dependencias en un uber-jar para Lambda -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -113,9 +101,7 @@
                 <executions>
                     <execution>
                         <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
+                        <goals><goal>shade</goal></goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
                             <filters>
