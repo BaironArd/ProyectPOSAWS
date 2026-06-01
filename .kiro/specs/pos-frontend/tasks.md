@@ -119,3 +119,32 @@
   - [ ] 18.1 Create usePOSStore.test.ts with valid and invalid transitions
   - [ ] 18.2 Cover automatic transition CARRITO_ACTIVO → RESULTADOS when cart is emptied
   - [ ] 18.3 Create store.property.test.ts with state machine properties using fast-check
+
+
+- [ ] 19. Barcode scanner support (SPEC-016)
+  - [ ] 19.1 Implement paste event detection in SearchBar component
+  - [ ] 19.2 Add barcode pattern validation function (regex: `/^[A-Z]{3}-\d{3}$/`)
+  - [ ] 19.3 Implement auto-add to cart logic when exactly 1 product found with stock > 0
+  - [ ] 19.4 Add success notification on auto-add ("Product [name] added to cart")
+  - [ ] 19.5 Add error notifications for not found and out of stock cases
+  - [ ] 19.6 Clear search input after successful auto-add
+  - [ ] 19.7 Test with manual paste (Ctrl+V) and simulated barcode scanner input
+  - [ ] 19.8 Ensure manual typing still shows results in ProductList (no auto-add)
+
+- [ ] 20. Keyboard navigation (SPEC-017)
+  - [ ] 20.1 Create useKeyboardShortcuts hook with global keyboard event listener
+  - [ ] 20.2 Implement F3/Ctrl+F shortcut to focus search input
+  - [ ] 20.3 Implement ↑/↓ navigation in ProductList with selectedIndex state
+  - [ ] 20.4 Add visual highlight for selected product (border, background color)
+  - [ ] 20.5 Implement Enter key to add selected product to cart
+  - [ ] 20.6 Implement F9 shortcut for sale confirmation in CALCULANDO_PAGO state
+  - [ ] 20.7 Implement Escape key for cancel/back operations
+  - [ ] 20.8 Implement +/- keys for quantity adjustment in Cart items
+  - [ ] 20.9 Implement Delete/Backspace keys for cart item removal
+  - [ ] 20.10 Implement F10 shortcut to open sales history
+  - [ ] 20.11 Implement F1/? shortcut to show keyboard shortcuts help panel
+  - [ ] 20.12 Create KeyboardShortcutsHelp component with shortcuts table
+  - [ ] 20.13 Prevent default browser behavior for F1-F12 keys
+  - [ ] 20.14 Add aria-labels and keyboard navigation hints for accessibility
+  - [ ] 20.15 Test complete sale flow using only keyboard (no mouse)
+

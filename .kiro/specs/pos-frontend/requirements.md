@@ -324,3 +324,47 @@ The interface operates as a **finite state machine** with 13 mutually exclusive 
 2. FOR ALL valid action sequences that lead the Cart to be empty from `CARRITO_ACTIVO`, THE Store SHALL transition the UIState to `RESULTADOS`.
 3. FOR ALL valid sale confirmation sequences, THE Store SHALL produce a `VENTA_COMPLETA` state with empty Cart, empty query and montoPagado equal to `0`.
 4. THE System SHALL verify the above properties by running at least 100 randomly generated action sequences using `fast-check`.
+
+
+---
+
+### Requirement 20: Barcode Scanner Support (SPEC-016)
+
+**User Story:** As a Cashier, I want to scan product barcodes to add them automatically to the cart, to speed up the checkout process and simulate a real POS barcode scanner.
+
+#### Acceptance Criteria
+
+1. WHEN the Cashier pastes a complete product code (pattern: `XXX-NNN` where X is uppercase letter and N is digit) in the SearchBar, THE System SHALL detect it as a barcode scan event.
+2. WHEN a barcode is detected via paste event, THE System SHALL invoke `IProductoPort.buscar` with `type=code` and the scanned code.
+3. WHEN the barcode search returns exactly 1 product with `stock > 0`, THE System SHALL add that product to the Cart automatically with `cantidad: 1` without requiring a manual click on "Add" button.
+4. WHEN the product is auto-added to the Cart, THE System SHALL clear the SearchBar input field and show a success notification with message "Product [name] added to cart".
+5. WHEN the barcode search returns 0 products, THE System SHALL show an error notification with message "Product code [code] not found".
+6. WHEN the barcode search returns more than 1 product, THE System SHALL show the results in ProductList without auto-adding (manual selection required).
+7. WHEN the barcode search returns 1 product but `stock = 0`, THE System SHALL show an error notification with message "Product [name] out of stock" without adding to cart.
+8. THE System SHALL differentiate between manual typing and paste/scan events: manual typing shows results in ProductList, paste/scan auto-adds to cart.
+9. THE System SHALL support barcode scanners that simulate keyboard input followed by Enter key.
+
+---
+
+### Requirement 21: Keyboard Navigation (SPEC-017)
+
+**User Story:** As a Cashier, I want to operate the entire POS system using only the keyboard, to maximize checkout speed without using the mouse and improve ergonomics during long shifts.
+
+#### Acceptance Criteria
+
+1. WHEN the Cashier presses `F3` or `Ctrl+F` from any screen, THE System SHALL focus the SearchBar input field and select all existing text.
+2. WHEN the Cashier presses `↑` (Arrow Up) in ProductList, THE System SHALL move the selection highlight to the previous product in the list.
+3. WHEN the Cashier presses `↓` (Arrow Down) in ProductList, THE System SHALL move the selection highlight to the next product in the list.
+4. WHEN the Cashier presses `Enter` with a product selected in ProductList, THE System SHALL add that product to the Cart with `cantidad: 1`.
+5. WHEN the Cashier presses `F9` in UIState `CALCULANDO_PAGO` with valid payment amount, THE System SHALL confirm the sale (equivalent to clicking "Confirm sale" button).
+6. WHEN the Cashier presses `Escape` in any modal or secondary screen, THE System SHALL cancel the current operation and return to the previous UIState.
+7. WHEN the Cashier presses `+` (Plus) on a CartItem row, THE System SHALL increment the quantity of that item by 1.
+8. WHEN the Cashier presses `-` (Minus) on a CartItem row, THE System SHALL decrement the quantity of that item by 1.
+9. WHEN the Cashier presses `Delete` or `Backspace` on a CartItem row, THE System SHALL remove that item from the Cart.
+10. WHEN the Cashier presses `F10` from UIState `IDLE` or `RESULTADOS`, THE System SHALL transition to `HISTORIAL` to view sales history.
+11. WHEN the Cashier presses `Tab`, THE System SHALL move focus to the next interactive element following standard tab order.
+12. WHEN the Cashier presses `Shift+Tab`, THE System SHALL move focus to the previous interactive element.
+13. THE System SHALL show visual indicators (highlight, border, or background color) for the currently selected product in ProductList.
+14. THE System SHALL show a keyboard shortcuts help panel accessible via `F1` or `?` key, listing all available shortcuts for the current screen.
+15. THE System SHALL prevent default browser behavior for function keys (F1-F12) to avoid conflicts with POS shortcuts.
+
