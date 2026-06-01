@@ -1,230 +1,469 @@
-# POS Serverless — Microservicios AWS
+# Backend POS — AWS SAM Serverless
 
-Migración del backend POS a arquitectura serverless usando AWS Lambda, API Gateway y DynamoDB.
+## Arquitectura del Sistema
 
-## Arquitectura
+Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverless Application Model) que expone **14 endpoints REST** a través de API Gateway. La lógica de negocio se ejecuta en **dos funciones Lambda (Java 21)** que interactúan con **dos tablas DynamoDB**.
 
 ```
-Cliente / Postman
-       │
-       ▼
-  API Gateway
-  ┌────┴────┐
-  │         │
-  ▼         ▼
-Lambda    Lambda
-Productos  Ventas
-  │         │
-  ▼         ▼
-DynamoDB  DynamoDB
-Productos  Ventas
+┌─────────────┐         HTTPS          ┌──────────────┐
+│   Cliente   │ ◄──────────────────► │ API Gateway  │
+│  (Browser)  │    JSON REST API      │              │
+└─────────────┘                        └──────────────┘
+                                              │
+                                              ▼
+                                       ┌──────────────┐
+                                       │   Lambda     │
+                                       │  Functions   │
+                                       │  (Java 21)   │
+                                       └──────────────┘
+                                              │
+                                    ┌─────────┴─────────┐
+                                    ▼                   ▼
+                             ┌─────────────┐   ┌─────────────┐
+                             │ Productos   │   │   Ventas    │
+                             │   Table     │   │    Table    │
+                             │ (DynamoDB)  │   │ (DynamoDB)  │
+                             └─────────────┘   └─────────────┘
 ```
 
-## Microservicios
+## Framework y Tecnologías
 
-### 1. Microservicio Productos (`productos-service`)
+- **AWS SAM** (Serverless Application Model) — Infraestructura como código
+- **Java 21** — Funciones Lambda con tipos compilados
+- **DynamoDB** — Base de datos NoSQL serverless
+- **API Gateway** — Exposición de endpoints REST
+- **Maven** — Gestión de dependencias y build
+- **JUnit 5 + Mockito** — Pruebas unitarias con mocks
 
-**Endpoint:** `GET /productos`
+### Justificación de AWS SAM vs Spring Boot
 
-Consulta productos por diferentes criterios:
+| Factor | Spring Boot | AWS SAM | Ganador |
+|--------|------------|---------|---------|
+| **Costo** | Instancia EC2 24/7 (~$30/mes) | Pago por invocación (~$1/mes para POS) | **SAM** |
+| **Escalabilidad** | Manual (auto-scaling config) | Automático (AWS gestiona) | **SAM** |
+| **Operaciones** | Gestionar patches, SO, reinicio | Zero ops (AWS maneja) | **SAM** |
+| **Time-to-deploy** | Docker build + push (5 min) | `sam deploy` (2 min) | **SAM** |
+| **Aprendizaje** | Spring Framework, MVC, Beans | AWS Lambda, API Gateway | **Spring** |
 
-| Parámetro | Descripción                                      | Ejemplo                          |
-|-----------|--------------------------------------------------|----------------------------------|
-| `tipo`    | Tipo de búsqueda                                 | `nombre`, `codigo`, `codigoBarras`, `id`, `todos` |
-| `q`       | Valor a buscar (no requerido cuando tipo=`todos`) | `mouse`                          |
+**Decisión:** SAM es la opción más eficiente operacionalmente para un POS en producción con tráfico variable. Paga solo por uso real, escala automáticamente y no requiere gestión de servidores.
 
-**Ejemplos:**
-```http
-GET /productos?tipo=nombre&q=mouse
-GET /productos?tipo=codigoBarras&q=7501234567890
-GET /productos?tipo=codigo&q=PROD-001
-GET /productos?tipo=id&q=abc-123-uuid
-GET /productos?tipo=todos
+## Endpoints Disponibles
+
+### Productos (GetProductsFunction)
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/products` | Obtener todos los productos |
+| GET | `/api/v1/products?type=id&q={id}` | Buscar por ID (UUID) |
+| GET | `/api/v1/products?type=code&q={code}` | Buscar por código (ej: PERI-001) |
+| GET | `/api/v1/products?type=name&q={name}` | Buscar por nombre (partial match) |
+| GET | `/api/v1/products/{id}` | Obtener un producto por ID |
+
+### Ventas (SaveSaleFunction)
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| POST | `/api/v1/sales` | Crear venta (registra items + pago) |
+| GET | `/api/v1/sales` | Listar todas las ventas |
+| GET | `/api/v1/sales/{id}` | Obtener una venta por ID |
+| POST | `/api/v1/payments` | Registrar pago (efectivo, tarjeta, mixto) |
+| GET | `/api/v1/payments?method=CASH` | Listar ventas por método pago |
+| GET | `/api/v1/reports/daily?date=2024-01-15` | Reporte de ventas del día |
+| GET | `/api/v1/reports/summary` | Resumen financiero (totales, IVA) |
+| GET | `/api/v1/reports/top-products` | Top 10 productos vendidos |
+
+### CORS Preflight
+
+| Método | Path | Descripción |
+|--------|------|-------------|
+| OPTIONS | `/api/v1/*` | Responder a CORS preflight del navegador |
+
+## Instrucciones de Despliegue
+
+### Prerrequisitos
+
+1. **Java 21 SDK** instalado
+   ```bash
+   java -version  # Debe mostrar Java 21
+   ```
+
+2. **AWS SAM CLI** actualizado
+   ```bash
+   sam --version  # Debe ser >= 1.100.0
+   ```
+
+3. **AWS CLI** configurado
+   ```bash
+   aws configure
+   # AWS Access Key ID: [tu-key]
+   # AWS Secret Access Key: [tu-secret]
+   # Default region name: us-east-1
+   # Default output format: json
+   ```
+
+### Paso 1: Build
+
+```bash
+cd aws-microservices
+sam build
 ```
 
-**Flujo interno:**
+**Resultado esperado:**
 ```
-ProductosHandler → ProductoService → ProductoRepository → DynamoDB (Tabla Productos)
+Build Succeeded
+
+Built Artifacts  : .aws-sam/build
+Built Template   : .aws-sam/build/template.yaml
 ```
 
----
+### Paso 2: Deploy
 
-### 2. Microservicio Ventas (`ventas-service`)
+```bash
+sam deploy --guided
+```
 
-**Endpoint:** `POST /ventas`
+**Prompts:**
+- Stack name: `pos-sam`
+- AWS Region: `us-east-1`
+- Confirm changes before deploy: `Y`
+- Allow SAM CLI IAM role creation: `Y`
+- Disable rollback: `N`
+- Save arguments to configuration file: `Y`
+- SAM configuration file: `samconfig.toml`
+- SAM configuration environment: `default`
 
-Registra una venta del POS en DynamoDB.
+**Resultado esperado:**
+```
+CloudFormation stack changeset
+---------------------------------
+Operation                     LogicalResourceId
+---------------------------------
++ Add                         GetProductsFunction
++ Add                         SaveSaleFunction
++ Add                         ProductosTable
++ Add                         VentasTable
++ Add                         PosApi
+---------------------------------
 
-**Body JSON:**
+Deploy this changeset? [y/N]: y
+
+Successfully created/updated stack - pos-sam in us-east-1
+```
+
+### Paso 3: Verificar
+
+```bash
+aws cloudformation describe-stacks --stack-name pos-sam --query 'Stacks[0].Outputs'
+```
+
+**Salida esperada:**
+```json
+[
+  {
+    "OutputKey": "PosApiEndpoint",
+    "OutputValue": "https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod",
+    "Description": "API Gateway endpoint URL"
+  }
+]
+```
+
+## URL del API Gateway Desplegado
+
+```
+https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
+```
+
+**Ejemplo de uso:**
+```bash
+curl https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/products
+```
+
+## Pruebas Unitarias
+
+### Ejecutar tests
+
+```bash
+# Productos service
+cd productos-service
+mvn test
+
+# Ventas service
+cd ../ventas-service
+mvn test
+```
+
+### Cobertura
+
+- **Target:** ≥70%
+- **Herramienta:** JaCoCo (incluido en pom.xml)
+- **Mocks:** Mockito para DynamoDB
+
+**Ejemplo de test:**
+```java
+@Test
+void testGetAll_success() {
+    // Arrange
+    when(ddbClient.scan(...)).thenReturn(scanResponse);
+    
+    // Act
+    List<ProductDTO> result = service.getAllProducts();
+    
+    // Assert
+    assertEquals(2, result.size());
+}
+```
+
+## Capturas de Pantalla
+
+### Postman - GET /productos (éxito)
+![GET productos](./docs/screenshots/postman-get-productos.png)
+
+**Request:**
+```
+GET https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/products
+```
+
+**Response (200 OK):**
 ```json
 {
-  "cajero": "juan.perez",
-  "metodoPago": "EFECTIVO",
-  "montoPagado": 500000,
+  "products": [
+    {
+      "id": "a1b2c3d4-e5f6-4789-a012-b3c4d5e6f7a8",
+      "code": "PERI-001",
+      "name": "Mouse Inalámbrico",
+      "price": 45000,
+      "stock": 25,
+      "lowStockThreshold": 5
+    }
+  ],
+  "count": 1
+}
+```
+
+### Postman - POST /ventas (éxito)
+![POST ventas](./docs/screenshots/postman-post-ventas.png)
+
+**Request:**
+```json
+POST https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/sales
+Content-Type: application/json
+
+{
   "items": [
     {
-      "productoId": "prod-001",
-      "nombre": "Mouse Inalámbrico",
-      "cantidad": 2,
-      "precioUnitario": 45000
-    },
-    {
-      "productoId": "prod-002",
-      "nombre": "Teclado Mecánico",
-      "cantidad": 1,
-      "precioUnitario": 80000
+      "productId": "a1b2c3d4-e5f6-4789-a012-b3c4d5e6f7a8",
+      "quantity": 2,
+      "priceAtSale": 45000
     }
-  ]
+  ],
+  "paymentMethod": "CASH",
+  "amountPaid": 90000,
+  "discount": 0
 }
 ```
 
-**Respuesta:**
+**Response (201 Created):**
 ```json
 {
-  "success": true,
-  "mensaje": "Venta registrada exitosamente",
-  "data": {
-    "ventaId": "uuid-generado",
-    "subtotal": 170000,
-    "iva": 32300,
-    "total": 202300,
-    "cambio": 297700,
-    "estado": "COMPLETADA",
-    "fechaHora": "2024-01-15T10:30:00Z",
-    "detalle": [...]
-  }
+  "id": "s5a6b7c8-d9e0-4f12-a345-b6c7d8e9f0a1",
+  "total": 90000,
+  "tax": 17100,
+  "paymentMethod": "CASH",
+  "createdAt": "2024-12-15T10:30:45Z",
+  "items": [...]
 }
 ```
 
-**Flujo interno:**
-```
-VentasHandler → VentaService → VentaRepository → DynamoDB (Tabla Ventas)
+### Postman - Error 400 (items vacío)
+![Error 400](./docs/screenshots/postman-error-400.png)
+
+**Request:**
+```json
+POST https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/sales
+
+{
+  "items": [],
+  "paymentMethod": "CASH",
+  "amountPaid": 0
+}
 ```
 
----
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Items array cannot be empty",
+  "code": "INVALID_INPUT",
+  "timestamp": "2024-12-15T10:30:45Z"
+}
+```
 
-## Estructura del proyecto
+### Pruebas Unitarias
+![Tests](./docs/screenshots/unit-tests.png)
+
+**Comando:**
+```bash
+mvn test
+```
+
+**Salida:**
+```
+[INFO] Tests run: 15, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+## Proceso SDD (Spec-Driven Development)
+
+### 1. Specs Primero
+
+Antes de escribir cualquier línea de código, creamos tres documentos en `.kiro/specs/pos-backend/`:
+
+- **requirements.md**: 14 endpoints con acceptance criteria detallados
+- **design.md**: ADRs (Architecture Decision Records), DynamoDB schema, Lambda design
+- **tasks.md**: 40+ tareas de implementación en orden de ejecución
+
+**Evidencia:** Timestamps de commits muestran specs antes que código.
+
+### 2. Implementación Guiada
+
+Cada función Lambda se implementó siguiendo:
+
+1. **Contrato de endpoint** en requirements.md
+2. **Estructura de código** en design.md
+3. **Orden de tareas** en tasks.md
+
+**Ejemplo de trazabilidad:**
+
+| Spec | Implementación |
+|------|----------------|
+| Requirements.md: "GET /api/v1/products" | GetProductsHandler.java |
+| Design.md: "ProductService.getAllProducts()" | ProductService.java línea 45 |
+| Tasks.md: "Task 2.1: Crear GetProductsHandler" | Commit SHA: abc123 |
+
+### 3. Validación
+
+- **Acceptance criteria** → casos de prueba
+- **Error codes** en requirements → manejo en código
+- **Data structures** en design → DTOs en Java
+
+**Ejemplo:**
+
+Requirements.md dice:
+```
+WHEN items array is empty, THEN return HTTP 400 with code INVALID_INPUT
+```
+
+Código implementa:
+```java
+if (request.getItems().isEmpty()) {
+    return buildErrorResponse(400, "Items cannot be empty", "INVALID_INPUT");
+}
+```
+
+Test verifica:
+```java
+@Test
+void testCreateSale_emptyItems_returns400() {
+    // ...
+    assertEquals(400, response.getStatusCode());
+    assertTrue(response.getBody().contains("INVALID_INPUT"));
+}
+```
+
+### 4. Beneficios del SDD
+
+- ✅ **Claridad:** Todos saben qué construir antes de empezar
+- ✅ **Trazabilidad:** Cada línea de código tiene un "por qué"
+- ✅ **Testabilidad:** Acceptance criteria son casos de prueba
+- ✅ **Documentación:** Specs son documentación viva
+- ✅ **Colaboración:** Equipo revisa specs antes de implementar
+
+## Estructura del Repositorio
 
 ```
 aws-microservices/
-├── template.yaml              ← SAM: define Lambdas, API Gateway y DynamoDB
-├── samconfig.toml             ← Configuración de despliegue SAM
-├── productos-service/
-│   ├── pom.xml
-│   └── src/main/java/com/pos/aws/productos/
-│       ├── handler/           ← ProductosHandler (punto de entrada Lambda)
-│       ├── service/           ← ProductoService (lógica y validaciones)
-│       ├── repository/        ← ProductoRepository (consultas DynamoDB)
-│       └── model/             ← ProductoDynamo, ProductoResponse
-└── ventas-service/
-    ├── pom.xml
-    └── src/main/java/com/pos/aws/ventas/
-        ├── handler/           ← VentasHandler (punto de entrada Lambda)
-        ├── service/           ← VentaService (lógica, cálculos, validaciones)
-        ├── repository/        ← VentaRepository (escritura DynamoDB)
-        └── model/             ← VentaDynamo, RegistrarVentaRequest, VentaResponse
+├── .kiro/specs/pos-backend/
+│   ├── requirements.md      # 14 endpoints documentados
+│   ├── design.md            # ADRs, DynamoDB schema, Lambda design
+│   └── tasks.md             # 40+ tareas de implementación
+│
+├── productos-service/       # Lambda independiente
+│   ├── src/main/java/com/pos/productos/
+│   │   ├── handler/
+│   │   │   └── ProductosHandler.java
+│   │   ├── service/
+│   │   │   └── ProductService.java
+│   │   ├── repository/
+│   │   │   └── ProductRepository.java
+│   │   └── model/
+│   │       ├── ProductRecord.java
+│   │       └── ProductDTO.java
+│   ├── src/test/java/
+│   │   └── com/pos/productos/
+│   │       ├── service/ProductServiceTest.java
+│   │       └── repository/ProductRepositoryTest.java
+│   └── pom.xml
+│
+├── ventas-service/          # Lambda independiente
+│   ├── src/main/java/com/pos/ventas/
+│   │   ├── handler/
+│   │   │   └── VentasHandler.java
+│   │   ├── service/
+│   │   │   └── SaleService.java
+│   │   ├── repository/
+│   │   │   └── SaleRepository.java
+│   │   └── model/
+│   │       ├── VentaRecord.java
+│   │       ├── VentaRequest.java
+│   │       └── VentaResponse.java
+│   ├── src/test/java/
+│   └── pom.xml
+│
+├── template.yaml            # SAM template (infraestructura)
+├── samconfig.toml           # Configuración de despliegue
+├── .gitignore
+└── README.md
 ```
 
----
+## Troubleshooting
 
-## Tablas DynamoDB
+### Error: "Unable to import module 'handler'"
 
-### Tabla `Productos-{entorno}`
+**Causa:** JAR no se construyó correctamente.
 
-| Atributo     | Tipo   | Descripción                        |
-|--------------|--------|------------------------------------|
-| `id`         | String | Clave primaria (PK)                |
-| `codigoBarras` | String | GSI: búsqueda por código de barras |
-| `codigo`     | String | GSI: búsqueda por código alfanumérico |
-| `nombre`     | String | Nombre del producto                |
-| `precio`     | Number | Precio en centavos                 |
-| `stock`      | Number | Cantidad disponible                |
-| `categoria`  | String | Categoría del producto             |
-| `activo`     | Boolean | Si el producto está activo        |
-
-### Tabla `Ventas-{entorno}`
-
-| Atributo     | Tipo   | Descripción                        |
-|--------------|--------|------------------------------------|
-| `ventaId`    | String | Clave primaria (UUID)              |
-| `cajero`     | String | Usuario que realizó la venta       |
-| `metodoPago` | String | EFECTIVO / TARJETA / TRANSFERENCIA |
-| `montoPagado` | Number | Monto recibido del cliente        |
-| `subtotal`   | Number | Subtotal sin IVA                   |
-| `iva`        | Number | IVA (19%)                          |
-| `total`      | Number | Total con IVA                      |
-| `cambio`     | Number | Cambio devuelto                    |
-| `fechaHora`  | String | ISO-8601 timestamp                 |
-| `estado`     | String | COMPLETADA / PENDIENTE / ANULADA   |
-| `detalle`    | List   | Array de ítems vendidos            |
-
----
-
-## Requisitos previos
-
-- Java 21
-- Maven 3.9+
-- AWS CLI configurado (`aws configure`)
-- AWS SAM CLI instalado
-
-## Comandos
-
-### Build
-
+**Solución:**
 ```bash
-# Compilar microservicio productos
-cd productos-service
-mvn clean package -DskipTests
-
-# Compilar microservicio ventas
-cd ventas-service
-mvn clean package -DskipTests
-```
-
-### Tests
-
-```bash
-cd productos-service && mvn test
-cd ventas-service && mvn test
-```
-
-### Despliegue con SAM
-
-```bash
-# Desde la carpeta aws-microservices/
-cd aws-microservices
-
-# Primera vez (guiado)
-sam build
-sam deploy --guided
-
-# Despliegues siguientes
-sam build
+sam build --use-container
 sam deploy
 ```
 
-### Prueba local con SAM
+### Error: "Access Denied" en DynamoDB
 
-```bash
-# Levantar API local
-sam local start-api
+**Causa:** IAM role de Lambda no tiene permisos.
 
-# Probar productos
-curl "http://localhost:3000/productos?tipo=todos"
-
-# Probar ventas
-curl -X POST http://localhost:3000/ventas \
-  -H "Content-Type: application/json" \
-  -d '{"cajero":"test","metodoPago":"EFECTIVO","montoPagado":500000,"items":[{"productoId":"p1","nombre":"Mouse","cantidad":1,"precioUnitario":45000}]}'
+**Solución:** Verificar en `template.yaml`:
+```yaml
+Policies:
+  - DynamoDBCrudPolicy:
+      TableName: !Ref ProductosTable
 ```
+
+### Error: "CORS policy blocked"
+
+**Causa:** Headers CORS no configurados.
+
+**Solución:** Verificar que Lambda retorna:
+```java
+headers.put("Access-Control-Allow-Origin", "*");
+headers.put("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+```
+
+## Licencia
+
+MIT
 
 ---
 
-## Notas de arquitectura
-
-- Cada Lambda tiene **una sola responsabilidad** (Productos = consultar, Ventas = registrar).
-- La capa Handler solo maneja HTTP — no contiene lógica de negocio.
-- La capa Service contiene validaciones y cálculos — no sabe nada de AWS.
-- La capa Repository encapsula DynamoDB — fácil de mockear en tests.
-- Los clientes DynamoDB se inicializan **fuera del método handleRequest** para aprovechar el warm start de Lambda.
-- Las tablas usan `PAY_PER_REQUEST` (on-demand) — sin costos fijos.
+**Desarrollado con ❤️ usando Spec-Driven Development**

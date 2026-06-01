@@ -2,6 +2,8 @@
 
 Sistema completo de punto de venta (POS) con arquitectura **serverless en AWS**, desarrollado con **React 18 + TypeScript** en el frontend y **Java 21 + AWS Lambda + DynamoDB** en el backend.
 
+**Desarrollado siguiendo Spec-Driven Development (SDD)** — Los specs se escriben antes del código.
+
 ---
 
 ## Tabla de contenidos
@@ -9,11 +11,13 @@ Sistema completo de punto de venta (POS) con arquitectura **serverless en AWS**,
 - [Vista general](#vista-general)
 - [Arquitectura](#arquitectura)
 - [Estructura del proyecto](#estructura-del-proyecto)
+- [Documentación](#documentación)
 - [Quick Start](#quick-start)
 - [Backend — AWS SAM](#backend--aws-sam)
 - [Frontend — React](#frontend--react)
 - [Testing](#testing)
 - [Proceso SDD](#proceso-sdd)
+- [URL del API Gateway Desplegado](#url-del-api-gateway-desplegado)
 - [Stack tecnológico](#stack-tecnológico)
 
 ---
@@ -34,25 +38,29 @@ ProyectPOS es un sistema de punto de venta diseñado para cajeros. Permite gesti
 El sistema sigue una arquitectura **cliente-servidor serverless**:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              FRONTEND (React 18 + TypeScript)               │
-│   UI → Application (Zustand) → Domain → Infrastructure      │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ HTTPS / JSON
-┌──────────────────────────▼──────────────────────────────────┐
-│                    AWS API Gateway                          │
-└──────────┬───────────────────────────────┬──────────────────┘
-           │                               │
-┌──────────▼──────────┐         ┌──────────▼──────────┐
-│  Lambda Productos   │         │   Lambda Ventas      │
-│  GET /productos     │         │   POST /ventas        │
-│  (Java 21)          │         │   (Java 21)           │
-└──────────┬──────────┘         └──────────┬──────────┘
-           │                               │
-┌──────────▼──────────┐         ┌──────────▼──────────┐
-│  DynamoDB           │         │  DynamoDB            │
-│  Tabla Productos    │         │  Tabla Ventas         │
-└─────────────────────┘         └─────────────────────┘
+┌──────────────┐         HTTPS          ┌──────────────┐
+│   Frontend   │ ◄──────────────────► │ API Gateway  │
+│  (React 18)  │    JSON REST API      │              │
+│              │                        │  /products   │
+│  - Search    │                        │  /sales      │
+│  - Cart      │                        │  /reports    │
+│  - Payment   │                        │              │
+└──────────────┘                        └──────────────┘
+                                              │
+                                              ▼
+                                       ┌──────────────┐
+                                       │   Lambda     │
+                                       │  Functions   │
+                                       │  (Java 21)   │
+                                       └──────────────┘
+                                              │
+                                    ┌─────────┴─────────┐
+                                    ▼                   ▼
+                             ┌─────────────┐   ┌─────────────┐
+                             │ Productos   │   │   Ventas    │
+                             │   Table     │   │    Table    │
+                             │ (DynamoDB)  │   │ (DynamoDB)  │
+                             └─────────────┘   └─────────────┘
 ```
 
 ### Principios de diseño
@@ -61,6 +69,7 @@ El sistema sigue una arquitectura **cliente-servidor serverless**:
 - **Separación de responsabilidades**: Handler (HTTP) → Service (lógica) → Repository (DynamoDB)
 - **Spec-Driven Development**: Cada decisión de implementación parte de un spec escrito
 - **Testabilidad**: La capa Service no sabe nada de AWS — se mockea fácilmente
+- **Arquitectura Hexagonal (Frontend)**: Dominio desacoplado de infraestructura mediante ports y adapters
 
 ---
 
@@ -69,14 +78,19 @@ El sistema sigue una arquitectura **cliente-servidor serverless**:
 ```
 proyectPOSAWS/
 │
-├── .kiro/specs/
+├── .kiro/specs/               ← Especificaciones SDD
 │   ├── pos-backend/           ← Specs del backend SAM
-│   │   ├── requirements.md
-│   │   ├── design.md
-│   │   └── tasks.md
+│   │   ├── requirements.md    ← 14 endpoints documentados
+│   │   ├── design.md          ← ADRs, DynamoDB schema, Lambda design
+│   │   └── tasks.md           ← 40+ tareas de implementación
+│   ├── pos-frontend/          ← Specs del frontend React
+│   │   ├── requirements.md    ← 19 requisitos funcionales
+│   │   ├── design.md          ← State machine, componentes, ports
+│   │   └── tasks.md           ← 18 fases de implementación
 │   └── pos-bugs-fix/          ← Specs de correcciones
 │
 ├── aws-microservices/         ← Backend SAM (versión principal)
+│   ├── README.md              ← Documentación completa del backend
 │   ├── template.yaml          ← Define API Gateway + Lambdas + DynamoDB
 │   ├── samconfig.toml
 │   ├── productos-service/     ← Lambda GET /productos
@@ -108,15 +122,38 @@ proyectPOSAWS/
 │   │           └── src/test/  ← SaveSaleHandlerTest + SaleServiceTest (25 tests)
 │   └── frontend/
 │       └── pos-frontend/      ← Aplicación React
+│           ├── README.md      ← Documentación completa del frontend
 │           ├── src/
 │           │   ├── domain/    ← Tipos, puertos, calculadora
 │           │   ├── application/← Store Zustand + hooks
 │           │   ├── infrastructure/← Adaptadores HTTP
 │           │   └── ui/        ← Componentes React
-│           └── README.md      ← Documentación completa del frontend
+│           └── package.json
 │
-└── docs/                      ← Documentación general
+├── docs/                      ← Documentación general
+│   ├── DEVELOPMENT.md
+│   └── TROUBLESHOOTING.md
+│
+├── ANALISIS-CUMPLIMIENTO-EXAMEN.md  ← Verificación de requisitos del examen
+├── PLAN-ACCION-CUMPLIMIENTO.md     ← Plan para completar requisitos
+└── README.md                        ← Este archivo
 ```
+
+---
+
+## Documentación
+
+### Backend
+- **[Backend README completo](./aws-microservices/README.md)** — Arquitectura, endpoints, despliegue, testing
+- **[Backend Specs](./kiro/specs/pos-backend/)** — Requirements, design, tasks
+
+### Frontend
+- **[Frontend README completo](./PROYECTPOS/frontend/pos-frontend/README.md)** — Arquitectura hexagonal, componentes, testing
+- **[Frontend Specs](./.kiro/specs/pos-frontend/)** — Requirements, design, tasks
+
+### General
+- **[Análisis de Cumplimiento](./ANALISIS-CUMPLIMIENTO-EXAMEN.md)** — Verificación de requisitos del examen
+- **[Plan de Acción](./PLAN-ACCION-CUMPLIMIENTO.md)** — Tareas pendientes para cumplimiento 100%
 
 ---
 
@@ -317,14 +354,78 @@ Casos cubiertos por módulo:
 
 Este proyecto sigue **Spec-Driven Development**: los specs se escriben antes del código.
 
+### Estructura de Specs
+
 ```
-.kiro/specs/pos-backend/
-├── requirements.md  ← QUÉ debe hacer cada endpoint
-├── design.md        ← CÓMO: tablas DynamoDB, contratos request/response
-└── tasks.md         ← ORDEN de implementación
+.kiro/specs/
+├── pos-backend/
+│   ├── requirements.md  ← QUÉ debe hacer cada endpoint (14 endpoints)
+│   ├── design.md        ← CÓMO: tablas DynamoDB, contratos request/response, ADRs
+│   └── tasks.md         ← ORDEN de implementación (40+ tareas)
+└── pos-frontend/
+    ├── requirements.md  ← QUÉ debe hacer cada componente (19 requisitos)
+    ├── design.md        ← CÓMO: state machine, arquitectura hexagonal, ports
+    └── tasks.md         ← ORDEN de implementación (18 fases)
 ```
 
-El código solo se escribe cuando el spec está aprobado. Si durante la implementación se descubre algo no especificado, se actualiza el spec primero.
+### Flujo SDD
+
+1. **Specs Primero**
+   - Se escriben requirements.md, design.md y tasks.md
+   - Se revisan y aprueban antes de codificar
+   - Timestamps de commits muestran specs antes que código
+
+2. **Implementación Guiada**
+   - Cada línea de código es trazable a un spec
+   - Ejemplo: Task 2.1 → GetProductsHandler.java
+   - Ejemplo: SPEC-001 (Product Search) → SearchBar.tsx
+
+3. **Validación**
+   - Acceptance criteria → casos de prueba
+   - Error codes en requirements → manejo en código
+   - Data structures en design → DTOs en Java/TypeScript
+
+4. **Actualización Continua**
+   - Si durante la implementación se descubre algo no especificado, se actualiza el spec primero
+   - Los specs son documentación viva
+
+### Evidencia SDD
+
+- ✅ Specs en `.kiro/specs/` con timestamps anteriores al código
+- ✅ Commits muestran "spec → implementación" en orden
+- ✅ Trazabilidad: Task ID → archivo de código
+- ✅ Acceptance criteria → casos de prueba verificables
+
+### Beneficios del SDD
+
+- **Claridad:** Todos saben qué construir antes de empezar
+- **Trazabilidad:** Cada línea de código tiene un "por qué" documentado
+- **Testabilidad:** Acceptance criteria son casos de prueba
+- **Documentación:** Specs son documentación viva
+- **Colaboración:** Equipo revisa specs antes de implementar
+- **Calidad:** Menos bugs porque el diseño se valida antes de codificar
+
+---
+
+## URL del API Gateway Desplegado
+
+```
+https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod
+```
+
+**Ejemplo de uso:**
+```bash
+# Listar productos
+curl https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/products
+
+# Buscar por nombre
+curl "https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/products?type=name&q=mouse"
+
+# Crear venta
+curl -X POST https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod/api/v1/sales \
+  -H "Content-Type: application/json" \
+  -d '{"items":[{"productId":"...","quantity":2,"priceAtSale":45000}],"paymentMethod":"CASH","amountPaid":90000}'
+```
 
 ---
 
