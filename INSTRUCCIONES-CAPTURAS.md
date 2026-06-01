@@ -114,7 +114,9 @@ git push
 Después de subir las capturas:
 
 - [x] ✅ Errores TypeScript eliminados
-- [x] ✅ Atajos de teclado implementados
+- [x] ✅ Atajos de teclado implementados (F3, ↑/↓, Enter, F9, +/-, Delete, F12, Escape)
+- [x] ✅ Soporte de código de barras (paste XXX-NNN auto-agrega al carrito)
+- [x] ✅ Navegación completa por teclado (sin necesidad de mouse)
 - [x] ✅ Configuración del API Gateway
 - [x] ✅ README completo
 - [x] ✅ Deploy de Lambda
@@ -131,11 +133,15 @@ Después de subir las capturas:
 - La API está en: **https://4udq52ntxl.execute-api.us-east-1.amazonaws.com/Prod**
 - Hay **50 productos** cargados en DynamoDB
 - Los atajos de teclado están activos:
-  - **F1** o **/** → Enfocar buscador
-  - **F2** → Ir al panel de pago
-  - **Enter** → Confirmar venta
+  - **F3** o **Ctrl+F** → Enfocar buscador
+  - **↑/↓** → Navegar productos/items del carrito
+  - **Enter** → Agregar producto seleccionado
+  - **F9** → Confirmar venta / Proceder al pago
+  - **+/-** → Aumentar/reducir cantidad en carrito
+  - **Delete** → Eliminar item del carrito
   - **Escape** → Cancelar
   - **F12** → Nueva venta
+  - **Paste código** (ej: LAP-001) → Auto-agregar al carrito
 
 ---
 
