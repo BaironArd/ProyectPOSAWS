@@ -32,15 +32,23 @@ export function SearchBar({ productoPort }: Props) {
     setEstado('BUSCANDO');
 
     try {
+      // Timeout de 10 segundos para evitar spinner infinito
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
       const productos = await productoPort.buscar(searchText.trim());
+      
+      clearTimeout(timeoutId);
       setProductos(productos);
       setEstado('RESULTADOS');
     } catch (error) {
       console.error('Error al buscar productos:', error);
       setError({
         codigo: 'SEARCH_FAILED',
-        mensaje: 'Error al buscar productos'
+        mensaje: 'Error al buscar productos. Intenta de nuevo.'
       });
+      setProductos([]);
+      setEstado('IDLE');
     }
   };
 
@@ -110,10 +118,11 @@ export function SearchBar({ productoPort }: Props) {
           onChange={(e) => setSearchText(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder="Buscar por nombre o código (presiona Enter para buscar)..."
+          placeholder="Buscar por nombre o código (presiona Enter)..."
           className={styles.input}
           aria-label="Buscar producto"
           aria-busy={buscando}
+          disabled={buscando}
         />
         {buscando && (
           <span className={styles.spinner} role="status" aria-label="Buscando...">
@@ -121,6 +130,9 @@ export function SearchBar({ productoPort }: Props) {
           </span>
         )}
       </div>
+      {buscando && (
+        <p className={styles.buscandoTexto}>Buscando productos... (esto puede tomar unos segundos la primera vez)</p>
+      )}
     </div>
   );
 }
