@@ -33,6 +33,7 @@ interface Props {
  */
 export function POSApp({ productoPort, ventaPort, impresionPort }: Props) {
   const estado      = usePOSStore((s) => s.estado);
+  const carrito     = usePOSStore((s) => s.carrito);
   const datosRecibo = usePOSStore((s) => s.datosRecibo);
   const ventaIdActual = usePOSStore((s) => s.ventaIdActual);
   const irAIdle     = usePOSStore((s) => s.irAIdle);
@@ -94,16 +95,18 @@ export function POSApp({ productoPort, ventaPort, impresionPort }: Props) {
 
         {/* ── Panel principal: búsqueda + carrito ── */}
         {mostrarPanelVenta && (
-          <div className={styles.flujoVenta}>
+          <div className={`${styles.flujoVenta} ${carrito.length > 0 ? styles.conCarrito : styles.sinCarrito}`}>
             <div className={`${styles.columnaIzq} ${activeSection !== 'products' ? styles.inactive : ''}`}>
               <SearchBar productoPort={productoPort} />
               <ProductList />
             </div>
-            <div className={`${styles.columnaDer} ${activeSection === 'products' ? styles.inactive : ''}`}>
-              <Cart />
-              <OrderSummary />
-              <PaymentPanel ventaPort={ventaPort} />
-            </div>
+            {carrito.length > 0 && (
+              <div className={styles.columnaDer}>
+                <Cart />
+                <OrderSummary />
+                <PaymentPanel ventaPort={ventaPort} />
+              </div>
+            )}
           </div>
         )}
       </main>

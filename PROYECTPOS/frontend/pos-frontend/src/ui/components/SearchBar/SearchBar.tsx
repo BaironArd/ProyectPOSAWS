@@ -1,6 +1,6 @@
+import { useState } from 'react';
 import { usePOSStore } from '@application/store/usePOSStore';
 import type { IProductoPort } from '@domain/ports/IProductoPort';
-import { useSearch } from '@application/hooks/useSearch';
 import styles from './SearchBar.module.css';
 
 interface Props {
@@ -11,14 +11,45 @@ interface Props {
 const BARCODE_PATTERN = /^[A-Z]{3}-\d{3}$/;
 
 export function SearchBar({ productoPort }: Props) {
-  const query = usePOSStore((s) => s.query);
   const estado = usePOSStore((s) => s.estado);
-  const setQuery = usePOSStore((s) => s.setQuery);
+  const setEstado = usePOSStore((s) => s.setEstado);
+  const setProductos = usePOSStore((s) => s.setProductos);
   const agregarAlCarrito = usePOSStore((s) => s.agregarAlCarrito);
+  const setError = usePOSStore((s) => s.setError);
 
-  useSearch(productoPort);
+  const [searchText, setSearchText] = useState('');
 
   const buscando = estado === 'BUSCANDO';
+
+  // Buscar al presionar Enter
+  const handleSearch = async () => {
+    if (searchText.trim().length < 2) {
+      setProductos([]);
+      setEstado('IDLE');
+      return;
+    }
+
+    setEstado('BUSCANDO');
+
+    try {
+      const productos = await productoPort.buscar(searchText.trim());
+      setProductos(productos);
+      setEstado('RESULTADOS');
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+      setError({
+        codigo: 'SEARCH_FAILED',
+        mensaje: 'Error al buscar productos'
+      });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSearch();
+    }
+  };
 
   // Manejar paste para detectar código de barras
   const handlePaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -40,7 +71,7 @@ export function SearchBar({ productoPort }: Props) {
             agregarAlCarrito(producto);
             
             // Limpiar búsqueda
-            setQuery('');
+            setSearchText('');
             
             // Mostrar notificación de éxito (usando console por ahora)
             console.log(`✓ ${producto.nombre} agregado al carrito`);
@@ -57,12 +88,14 @@ export function SearchBar({ productoPort }: Props) {
           // TODO: Agregar toast notification de error
         } else {
           // Múltiples productos - mostrar en lista (comportamiento normal)
-          setQuery(pastedText);
+          setSearchText(pastedText);
+          // Buscar automáticamente cuando es paste de código
+          setTimeout(() => handleSearch(), 0);
         }
       } catch (error) {
         console.error('Error al buscar código de barras:', error);
         // Comportamiento normal en caso de error
-        setQuery(pastedText);
+        setSearchText(pastedText);
       }
     }
     // Si no es código de barras, dejar que el paste normal ocurra
@@ -73,10 +106,11 @@ export function SearchBar({ productoPort }: Props) {
       <div className={styles.inputWrapper}>
         <input
           type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          onKeyDown={handleKeyDown}
           onPaste={handlePaste}
-          placeholder="Buscar por nombre o código (mínimo 2 caracteres)..."
+          placeholder="Buscar por nombre o código (presiona Enter para buscar)..."
           className={styles.input}
           aria-label="Buscar producto"
           aria-busy={buscando}
