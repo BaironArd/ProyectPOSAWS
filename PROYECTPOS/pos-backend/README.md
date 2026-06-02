@@ -4,7 +4,7 @@
 
 Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverless Application Model) que expone **2 endpoints REST principales** a través de API Gateway. La lógica de negocio se ejecuta en **dos funciones Lambda (Java 21)** que interactúan con **dos tablas DynamoDB**.
 
-**Nota:** Esta es una implementación simplificada. Para la versión completa con 14 endpoints (productos, ventas, pagos, reportes), ver `PROYECTPOS/backend/pos-backend/`.
+**Nota:** Esta es una implementación simplificada con 2 endpoints principales.
 
 ```
 ┌─────────────┐         HTTPS          ┌──────────────┐
@@ -74,7 +74,7 @@ Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverle
 | OPTIONS | `/productos` | Responder a CORS preflight del navegador |
 | OPTIONS | `/ventas` | Responder a CORS preflight del navegador |
 
-**Nota:** Para endpoints adicionales de reportes, pagos y consultas avanzadas, ver `PROYECTPOS/backend/pos-backend/` que implementa 14 endpoints completos.
+**Nota:** Estos son los 2 endpoints principales funcionales del sistema POS.
 
 ## Instrucciones de Despliegue
 
@@ -102,7 +102,7 @@ Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverle
 ### Paso 1: Build
 
 ```bash
-cd aws-microservices
+cd PROYECTPOS/pos-backend
 sam build
 ```
 
@@ -381,7 +381,7 @@ void testCreateSale_emptyItems_returns400() {
 ## Estructura del Repositorio
 
 ```
-aws-microservices/
+PROYECTPOS/pos-backend/
 ├── .kiro/specs/pos-backend/
 │   ├── requirements.md      # 14 endpoints documentados
 │   ├── design.md            # ADRs, DynamoDB schema, Lambda design

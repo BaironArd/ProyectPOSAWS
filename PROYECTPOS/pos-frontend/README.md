@@ -423,7 +423,7 @@ export class ProductoAdapter implements IProductoPort {
 ## Estructura del Repositorio
 
 ```
-pos-frontend/
+PROYECTPOS/pos-frontend/
 ├── .kiro/specs/pos-frontend/
 │   ├── requirements.md      # 19 requisitos funcionales
 │   ├── design.md            # State machine, componentes, ports
