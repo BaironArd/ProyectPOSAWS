@@ -151,53 +151,55 @@ El sistema sigue una arquitectura **cliente-servidor serverless** con AWS:
 ```
 proyectPOSAWS/
 │
-├── .kiro/specs/               ← Especificaciones SDD
-│   ├── pos-backend/           ← Specs del backend SAM
-│   │   ├── requirements.md    ← 14 endpoints documentados
-│   │   ├── design.md          ← ADRs, DynamoDB schema, Lambda design
-│   │   └── tasks.md           ← 40+ tareas de implementación
-│   ├── pos-frontend/          ← Specs del frontend React
-│   │   ├── requirements.md    ← 19 requisitos funcionales
-│   │   ├── design.md          ← State machine, componentes, ports
-│   │   └── tasks.md           ← 18 fases de implementación
-│   └── pos-bugs-fix/          ← Specs de correcciones
-│
-├── aws-microservices/         ← Backend SAM (implementación principal)
-│   ├── README.md              ← Documentación completa del backend
-│   ├── template.yaml          ← Define API Gateway + Lambdas + DynamoDB
-│   ├── samconfig.toml         ← Configuración de despliegue
+├── PROYECTPOS/                    ← Carpeta principal del proyecto
 │   │
-│   ├── productos-service/     ← Lambda GET /productos
-│   │   ├── pom.xml
-│   │   └── src/
-│   │       ├── main/java/com/pos/aws/productos/
-│   │       │   ├── handler/   ← ProductosHandler (entrada HTTP)
-│   │       │   ├── service/   ← ProductoService (lógica de negocio)
-│   │       │   ├── repository/← ProductoRepository (acceso a DynamoDB)
-│   │       │   └── model/     ← DTOs y entidades
-│   │       └── test/          ← ProductoServiceTest (9 tests con mocks)
+│   ├── pos-backend/               ← Backend SAM serverless
+│   │   ├── .kiro/specs/pos-backend/  ← Especificaciones SDD del backend
+│   │   │   ├── requirements.md    ← 14 endpoints documentados
+│   │   │   ├── design.md          ← ADRs, DynamoDB schema, Lambda design
+│   │   │   └── tasks.md           ← 40+ tareas de implementación
+│   │   │
+│   │   ├── productos-service/     ← Lambda GET /productos
+│   │   │   ├── pom.xml
+│   │   │   └── src/
+│   │   │       ├── main/java/com/pos/aws/productos/
+│   │   │       │   ├── handler/   ← ProductosHandler (entrada HTTP)
+│   │   │       │   ├── service/   ← ProductoService (lógica de negocio)
+│   │   │       │   ├── repository/← ProductoRepository (acceso a DynamoDB)
+│   │   │       │   └── model/     ← DTOs y entidades
+│   │   │       └── test/          ← ProductoServiceTest (tests con mocks)
+│   │   │
+│   │   ├── ventas-service/        ← Lambda POST /ventas
+│   │   │   ├── pom.xml
+│   │   │   └── src/
+│   │   │       ├── main/java/com/pos/aws/ventas/
+│   │   │       │   ├── handler/   ← VentasHandler (entrada HTTP)
+│   │   │       │   ├── service/   ← VentaService (lógica + cálculo IVA 19%)
+│   │   │       │   ├── repository/← VentaRepository (acceso a DynamoDB)
+│   │   │       │   └── model/     ← DTOs y entidades
+│   │   │       └── test/          ← VentaServiceTest (tests con mocks)
+│   │   │
+│   │   ├── template.yaml          ← Define API Gateway + Lambdas + DynamoDB
+│   │   ├── samconfig.toml         ← Configuración de despliegue AWS SAM
+│   │   └── README.md              ← Documentación completa del backend
 │   │
-│   └── ventas-service/        ← Lambda POST /ventas
-│       ├── pom.xml
-│       └── src/
-│           ├── main/java/com/pos/aws/ventas/
-│           │   ├── handler/   ← VentasHandler (entrada HTTP)
-│           │   ├── service/   ← VentaService (lógica + cálculo IVA 19%)
-│           │   ├── repository/← VentaRepository (acceso a DynamoDB)
-│           │   └── model/     ← DTOs y entidades
-│           └── test/          ← VentaServiceTest (tests con mocks Mockito)
+│   └── pos-frontend/              ← Aplicación React
+│       ├── .kiro/specs/pos-frontend/  ← Especificaciones SDD del frontend
+│       │   ├── requirements.md    ← 19 requisitos funcionales
+│       │   ├── design.md          ← State machine, arquitectura hexagonal
+│       │   └── tasks.md           ← 18 fases de implementación
+│       │
+│       ├── src/
+│       │   ├── domain/            ← Tipos TypeScript, puertos, calculadora
+│       │   ├── application/       ← Store Zustand + hooks personalizados
+│       │   ├── infrastructure/    ← Adaptadores HTTP para API Gateway
+│       │   └── ui/                ← Componentes React
+│       │
+│       ├── package.json
+│       ├── vite.config.ts
+│       └── README.md              ← Documentación completa del frontend
 │
-├── PROYECTPOS/frontend/pos-frontend/  ← Aplicación React
-│   ├── README.md              ← Documentación completa del frontend
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── src/
-│       ├── domain/            ← Tipos TypeScript, puertos, calculadora
-│       ├── application/       ← Store Zustand + hooks personalizados
-│       ├── infrastructure/    ← Adaptadores HTTP para API Gateway
-│       └── ui/                ← Componentes React
-│
-├── screenshots/               ← Capturas de pantalla para documentación
+├── screenshots/                   ← Capturas de pantalla para documentación
 │   ├── 1-backend-api-tests1.png
 │   ├── 1-backend-api-tests2.png
 │   ├── 2-productos-unit-tests.png
@@ -206,9 +208,9 @@ proyectPOSAWS/
 │   ├── 5-frontend-venta-exitosa.png
 │   └── 6-frontend-manejo-error.png
 │
-├── test-api.ps1               ← Script PowerShell para probar el API
-├── ANALISIS-CUMPLIMIENTO-EXAMEN.md  ← Verificación de requisitos
-└── README.md                  ← Este archivo
+├── test-api.ps1                   ← Script PowerShell para probar el API
+├── ANALISIS-CUMPLIMIENTO-EXAMEN.md  ← Verificación de requisitos del examen
+└── README.md                      ← Este archivo
 ```
 
 ---
@@ -223,7 +225,7 @@ proyectPOSAWS/
 ### 1. Desplegar el Backend en AWS
 
 ```bash
-cd aws-microservices
+cd PROYECTPOS/pos-backend
 
 # Compilar las funciones Lambda
 sam build
@@ -250,7 +252,7 @@ Value: https://vgs199hevi.execute-api.us-east-1.amazonaws.com/dev
 ### 2. Configurar y ejecutar el Frontend
 
 ```bash
-cd PROYECTPOS/frontend/pos-frontend
+cd PROYECTPOS/pos-frontend
 
 # Instalar dependencias
 npm install
@@ -369,7 +371,7 @@ Content-Type: application/json
 
 ```bash
 # Compilar solo un servicio
-cd aws-microservices/productos-service
+cd PROYECTPOS/pos-backend/productos-service
 mvn clean package -DskipTests
 
 # Ejecutar tests
@@ -422,7 +424,7 @@ El frontend implementa **arquitectura hexagonal** para desacoplar la lógica de 
 
 ### Configuración
 
-Crea un archivo `.env` en `PROYECTPOS/frontend/pos-frontend/`:
+Crea un archivo `.env` en `PROYECTPOS/pos-frontend/`:
 
 ```bash
 # URL del API Gateway (sin / al final)
@@ -432,7 +434,7 @@ VITE_API_BASE_URL=https://vgs199hevi.execute-api.us-east-1.amazonaws.com/dev
 ### Comandos
 
 ```bash
-cd PROYECTPOS/frontend/pos-frontend
+cd PROYECTPOS/pos-frontend
 
 # Instalar dependencias
 npm install
@@ -748,8 +750,8 @@ Ver [`ANALISIS-CUMPLIMIENTO-EXAMEN.md`](./ANALISIS-CUMPLIMIENTO-EXAMEN.md) para 
 
 ### READMEs específicos
 
-- **Backend:** [`aws-microservices/README.md`](./aws-microservices/README.md)
-- **Frontend:** [`PROYECTPOS/frontend/pos-frontend/README.md`](./PROYECTPOS/frontend/pos-frontend/README.md)
+- **Backend:** [`PROYECTPOS/pos-backend/README.md`](./PROYECTPOS/pos-backend/README.md)
+- **Frontend:** [`PROYECTPOS/pos-frontend/README.md`](./PROYECTPOS/pos-frontend/README.md)
 
 ---
 
@@ -771,7 +773,7 @@ MIT — Proyecto académico para demostración de arquitectura serverless con AW
 
 Si tienes preguntas o encuentras problemas:
 
-1. Revisa la [documentación de troubleshooting](./aws-microservices/README.md#troubleshooting)
+1. Revisa la [documentación de troubleshooting](./PROYECTPOS/pos-backend/README.md#troubleshooting)
 2. Verifica los [logs de CloudWatch](https://console.aws.amazon.com/cloudwatch/)
 3. Abre un issue en GitHub
 
