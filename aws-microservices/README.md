@@ -2,7 +2,9 @@
 
 ## Arquitectura del Sistema
 
-Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverless Application Model) que expone **14 endpoints REST** a través de API Gateway. La lógica de negocio se ejecuta en **dos funciones Lambda (Java 21)** que interactúan con **dos tablas DynamoDB**.
+Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverless Application Model) que expone **2 endpoints REST principales** a través de API Gateway. La lógica de negocio se ejecuta en **dos funciones Lambda (Java 21)** que interactúan con **dos tablas DynamoDB**.
+
+**Nota:** Esta es una implementación simplificada. Para la versión completa con 14 endpoints (productos, ventas, pagos, reportes), ver `PROYECTPOS/backend/pos-backend/`.
 
 ```
 ┌─────────────┐         HTTPS          ┌──────────────┐
@@ -49,34 +51,30 @@ Este backend implementa una **arquitectura serverless** usando AWS SAM (Serverle
 
 ## Endpoints Disponibles
 
-### Productos (GetProductsFunction)
+### Productos (LambdaProductos)
 
 | Método | Path | Descripción |
 |--------|------|-------------|
-| GET | `/api/v1/products` | Obtener todos los productos |
-| GET | `/api/v1/products?type=id&q={id}` | Buscar por ID (UUID) |
-| GET | `/api/v1/products?type=code&q={code}` | Buscar por código (ej: PERI-001) |
-| GET | `/api/v1/products?type=name&q={name}` | Buscar por nombre (partial match) |
-| GET | `/api/v1/products/{id}` | Obtener un producto por ID |
+| GET | `/productos` | Obtener todos los productos (default) |
+| GET | `/productos?tipo=id&q={id}` | Buscar por ID (UUID) |
+| GET | `/productos?tipo=codigo&q={code}` | Buscar por código (ej: PERI-001) |
+| GET | `/productos?tipo=codigoBarras&q={barcode}` | Buscar por código de barras |
+| GET | `/productos?tipo=nombre&q={name}` | Buscar por nombre (partial match) |
 
-### Ventas (SaveSaleFunction)
+### Ventas (LambdaVentas)
 
 | Método | Path | Descripción |
 |--------|------|-------------|
-| POST | `/api/v1/sales` | Crear venta (registra items + pago) |
-| GET | `/api/v1/sales` | Listar todas las ventas |
-| GET | `/api/v1/sales/{id}` | Obtener una venta por ID |
-| POST | `/api/v1/payments` | Registrar pago (efectivo, tarjeta, mixto) |
-| GET | `/api/v1/payments?method=CASH` | Listar ventas por método pago |
-| GET | `/api/v1/reports/daily?date=2024-01-15` | Reporte de ventas del día |
-| GET | `/api/v1/reports/summary` | Resumen financiero (totales, IVA) |
-| GET | `/api/v1/reports/top-products` | Top 10 productos vendidos |
+| POST | `/ventas` | Crear venta (registra items + pago) |
 
 ### CORS Preflight
 
 | Método | Path | Descripción |
 |--------|------|-------------|
-| OPTIONS | `/api/v1/*` | Responder a CORS preflight del navegador |
+| OPTIONS | `/productos` | Responder a CORS preflight del navegador |
+| OPTIONS | `/ventas` | Responder a CORS preflight del navegador |
+
+**Nota:** Para endpoints adicionales de reportes, pagos y consultas avanzadas, ver `PROYECTPOS/backend/pos-backend/` que implementa 14 endpoints completos.
 
 ## Instrucciones de Despliegue
 

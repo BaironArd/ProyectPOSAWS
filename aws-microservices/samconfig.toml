@@ -11,16 +11,21 @@ version = 0.1
 [default.deploy.parameters]
 stack_name          = "pos-serverless-dev"
 s3_bucket           = ""                    # SAM crea el bucket automáticamente con --resolve-s3
-s3_prefix           = "pos-serverless"
+s3_prefix           = "pos-serverless-dev"
 region              = "us-east-1"           # Cambia a tu región AWS
 confirm_changeset   = true
 capabilities        = "CAPABILITY_IAM"
-parameter_overrides = "Entorno=dev"
+parameter_overrides = "Entorno=\"dev\""
 resolve_s3          = true
 
 # ─────────────────────────────────────────────
 # Entorno: prod
 # ─────────────────────────────────────────────
+disable_rollback = true
+image_repositories = []
+
+[default.global.parameters]
+region = "us-east-1"
 [prod]
 [prod.deploy]
 [prod.deploy.parameters]

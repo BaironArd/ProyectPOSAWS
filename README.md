@@ -89,7 +89,7 @@ proyectPOSAWS/
 │   │   └── tasks.md           ← 18 fases de implementación
 │   └── pos-bugs-fix/          ← Specs de correcciones
 │
-├── aws-microservices/         ← Backend SAM (versión principal)
+├── aws-microservices/         ← Backend SAM simplificado (2 endpoints)
 │   ├── README.md              ← Documentación completa del backend
 │   ├── template.yaml          ← Define API Gateway + Lambdas + DynamoDB
 │   ├── samconfig.toml
@@ -110,16 +110,16 @@ proyectPOSAWS/
 │           │   ├── service/   ← VentaService (lógica + IVA 19%)
 │           │   ├── repository/← VentaRepository (DynamoDB)
 │           │   └── model/
-│           └── test/          ← VentaServiceTest (8 tests con mocks)
+│           └── test/          ← VentaServiceTest (tests con mocks)
 │
 ├── PROYECTPOS/
 │   ├── backend/
-│   │   └── pos-backend/       ← Backend SAM (versión anterior renombrada)
+│   │   └── pos-backend/       ← Backend SAM completo (14 endpoints - versión principal)
 │   │       ├── template.yaml
 │   │       ├── get-products/  ← Lambda GetProductsFunction
-│   │       │   └── src/test/  ← GetProductsHandlerTest + ProductServiceTest (20 tests)
+│   │       │   └── src/test/  ← GetProductsHandlerTest + ProductServiceTest (12 tests)
 │   │       └── save-sale/     ← Lambda SaveSaleFunction
-│   │           └── src/test/  ← SaveSaleHandlerTest + SaleServiceTest (25 tests)
+│   │           └── src/test/  ← SaveSaleHandlerTest + SaleServiceTest (tests con mocks)
 │   └── frontend/
 │       └── pos-frontend/      ← Aplicación React
 │           ├── README.md      ← Documentación completa del frontend
@@ -184,6 +184,8 @@ sam deploy            # Despliegues siguientes
 ## Backend — AWS SAM
 
 ### Endpoints
+
+**Nota:** `aws-microservices/` tiene una implementación simplificada con 2 endpoints funcionales. Para la versión completa con 14 endpoints, ver `PROYECTPOS/backend/pos-backend/`.
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
@@ -304,9 +306,9 @@ VITE_API_BASE_URL=https://tu-api-id.execute-api.us-east-1.amazonaws.com/Prod
 | Módulo | Tests | Cobertura |
 |--------|-------|-----------|
 | `aws-microservices/productos-service` | 9 tests | Service: búsqueda por nombre, id, código, todos, errores |
-| `aws-microservices/ventas-service` | 8 tests | Service: IVA, validaciones, cambio exacto, errores |
-| `pos-backend/get-products` | 20 tests | Handler (8) + Service (12) con mocks Mockito |
-| `pos-backend/save-sale` | 25 tests | Handler (10) + Service (15) con mocks Mockito |
+| `aws-microservices/ventas-service` | Tests | Service: IVA, validaciones, cambio exacto, errores |
+| `pos-backend/get-products` | 12 tests | Service: búsqueda por tipo, validaciones, errores |
+| `pos-backend/save-sale` | Tests | Handler + Service con mocks Mockito |
 
 ### Ejecutar todos los tests
 

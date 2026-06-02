@@ -68,13 +68,15 @@ El frontend es una **Single Page Application (SPA)** construida con React 18 que
 ┌─────────────────────▼───────────────────────────────────┐
 │            DOMAIN LAYER (Pure TypeScript)               │
 │  types/, ports/ (interfaces), calculadora.ts            │
-│  - IProductoPort, IVentaPort, IAuthPort                 │
+│  - IProductoPort, IVentaPort, IImpresionPort            │
+│  - IAuthPort, IInventarioPort, etc. (placeholders)      │
 │  - calcularResumen, calcularCambio, calcularSubtotal    │
 └─────────────────────┬───────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────┐
 │       INFRASTRUCTURE LAYER (Adapters)                   │
 │  ProductoAdapter, VentaAdapter (fetch API Gateway)      │
+│  AuthAdapter, InventarioAdapter, etc. (mocks)           │
 │  mocks/ (para testing sin backend)                      │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -430,14 +432,16 @@ pos-frontend/
 ├── src/
 │   ├── domain/              # Lógica de negocio pura
 │   │   ├── types/
-│   │   │   ├── POSState.ts
-│   │   │   ├── Producto.ts
-│   │   │   └── Sesion.ts
+│   │   │   └── POSState.ts
 │   │   ├── ports/           # Interfaces (contratos)
 │   │   │   ├── IProductoPort.ts
 │   │   │   ├── IVentaPort.ts
-│   │   │   ├── IAuthPort.ts
-│   │   │   └── ... (8 ports)
+│   │   │   ├── IImpresionPort.ts
+│   │   │   ├── IAuthPort.ts (placeholder)
+│   │   │   ├── IInventarioPort.ts (placeholder)
+│   │   │   ├── IReportesPort.ts (placeholder)
+│   │   │   ├── IHistorialPort.ts (placeholder)
+│   │   │   └── IDevolucionPort.ts (placeholder)
 │   │   └── calculadora.ts   # Funciones puras
 │   │
 │   ├── application/         # Orquestación de estado
@@ -447,26 +451,44 @@ pos-frontend/
 │   │       ├── useSearch.ts
 │   │       ├── useCart.ts
 │   │       ├── usePayment.ts
-│   │       └── ... (9 hooks)
+│   │       ├── useReceipt.ts
+│   │       ├── useFocusManager.ts
+│   │       ├── useKeyboardShortcuts.ts
+│   │       ├── useAuth.ts (placeholder)
+│   │       ├── useInventario.ts (placeholder)
+│   │       ├── useReportes.ts (placeholder)
+│   │       ├── useHistorial.ts (placeholder)
+│   │       └── useDevolucion.ts (placeholder)
 │   │
 │   ├── infrastructure/      # Implementaciones concretas
 │   │   ├── adapters/
 │   │   │   ├── ProductoAdapter.ts
 │   │   │   ├── VentaAdapter.ts
-│   │   │   └── ... (8 adapters)
+│   │   │   ├── ImpresionAdapter.ts
+│   │   │   ├── AuthAdapter.ts (mock)
+│   │   │   ├── InventarioAdapter.ts (mock)
+│   │   │   ├── ReportesAdapter.ts (mock)
+│   │   │   ├── HistorialAdapter.ts (mock)
+│   │   │   └── DevolucionAdapter.ts (mock)
 │   │   └── mocks/
-│   │       ├── productos.mock.ts
-│   │       └── ... (7 mocks)
+│   │       ├── auth.mock.ts
+│   │       ├── inventario.mock.ts
+│   │       ├── reportes.mock.ts
+│   │       ├── historial.mock.ts
+│   │       └── devolucion.mock.ts
 │   │
 │   └── ui/                  # Componentes React
 │       ├── components/
-│       │   ├── SearchBar.tsx
-│       │   ├── ProductList.tsx
-│       │   ├── Cart.tsx
-│       │   ├── OrderSummary.tsx
-│       │   ├── PaymentPanel.tsx
-│       │   ├── ErrorBanner.tsx
-│       │   └── ... (13 componentes)
+│       │   ├── SearchBar/
+│       │   ├── ProductList/
+│       │   ├── Cart/
+│       │   ├── OrderSummary/
+│       │   ├── PaymentPanel/
+│       │   ├── ErrorBanner/
+│       │   ├── Header/
+│       │   ├── ReceiptButton/
+│       │   ├── ReceiptPortal/
+│       │   └── ReceiptViewer/
 │       └── POSApp.tsx       # Componente raíz
 │
 ├── index.html

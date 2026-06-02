@@ -173,6 +173,8 @@ Resources:
           AttributeType: S
         - AttributeName: code
           AttributeType: S
+        - AttributeName: barcode
+          AttributeType: S
       KeySchema:
         - AttributeName: id
           KeyType: HASH
@@ -180,6 +182,12 @@ Resources:
         - IndexName: code-index
           KeySchema:
             - AttributeName: code
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: barcode-index
+          KeySchema:
+            - AttributeName: barcode
               KeyType: HASH
           Projection:
             ProjectionType: ALL
