@@ -17,6 +17,7 @@ interface Props {
     montoPagado: number;
     cambio: number;
   };
+  isFocused?: boolean;
 }
 
 /**
@@ -24,7 +25,7 @@ interface Props {
  * El contenido del recibo se renderiza en ReceiptPortal para evitar
  * problemas con estilos de impresión.
  */
-export function ReceiptButton({ impresionPort: _, datosVenta: __ }: Props) {
+export function ReceiptButton({ impresionPort: _, datosVenta: __, isFocused = false }: Props) {
   const estado = usePOSStore((s) => s.estado);
 
   if (estado !== 'VENTA_COMPLETA') return null;
@@ -34,7 +35,12 @@ export function ReceiptButton({ impresionPort: _, datosVenta: __ }: Props) {
   }
 
   return (
-    <button className={styles.btn} onClick={handleImprimir} aria-label="Imprimir recibo">
+    <button 
+      className={`${styles.btn} ${isFocused ? styles.btnFocused : ''}`}
+      onClick={handleImprimir} 
+      aria-label="Imprimir recibo"
+      data-action="imprimir"
+    >
       🖨️ Imprimir recibo
     </button>
   );

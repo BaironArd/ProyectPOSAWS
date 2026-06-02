@@ -32,6 +32,10 @@ export function useKeyboardShortcuts() {
         e.preventDefault();
         const searchInput = document.querySelector<HTMLInputElement>('input[type="text"], input[placeholder*="Buscar"]');
         if (searchInput) {
+          // Activar sección de productos antes de hacer focus
+          const { setActiveSection } = useFocusManager.getState();
+          setActiveSection('products');
+          
           searchInput.focus();
           searchInput.select();
         }
@@ -93,13 +97,6 @@ export function useKeyboardShortcuts() {
             searchInput.dispatchEvent(new Event('input', { bubbles: true }));
           }
         }
-        return;
-      }
-
-      // Enter en venta exitosa → Nueva venta
-      if (e.key === 'Enter' && estado === 'VENTA_COMPLETA') {
-        e.preventDefault();
-        resetVenta();
         return;
       }
     }

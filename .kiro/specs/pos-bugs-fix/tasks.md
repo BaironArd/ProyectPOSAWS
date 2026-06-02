@@ -15,7 +15,7 @@ All fixes follow the exploratory bugfix workflow: write tests BEFORE fix to unde
 
 ### Bug 1 - estadoPrevio not saved before going to ERROR state
 
-- [ ] 1.1 Write bug condition exploration test for estadoPrevio
+- [x] 1.1 Write bug condition exploration test for estadoPrevio
   - **Property 1: Bug Condition** - estadoPrevio Preservation on Error
   - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
   - **DO NOT attempt to fix the test or the code when it fails**

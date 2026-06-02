@@ -99,99 +99,228 @@ export function PaymentPanel({ ventaPort }: Props) {
       const elements = getNavigableElements();
       const currentElement = elements[focusedElementIndex];
 
-      // Si estamos en un input o select, solo permitir Tab y Enter
       const target = e.target as HTMLElement;
-      const isInInput = target.tagName === 'INPUT' || target.tagName === 'SELECT';
+      const isInInput = target.tagName === 'INPUT';
+      const isInSelect = target.tagName === 'SELECT';
 
-      // Si estamos escribiendo en un input, no interceptar las teclas normales
-      if (isInInput) {
-        // Solo interceptar Enter y Tab cuando estamos en un input
+      // ===== NAVEGACIÓN ENTRE MÉTODOS DE PAGO (sin método seleccionado) =====
+      if (!metodoSeleccionado) {
+        // Solo permitir flechas y Enter para navegar entre métodos
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setFocusedElementIndex((prev) => (prev > 0 ? prev - 1 : elements.length - 1));
+          return;
+        }
+        
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setFocusedElementIndex((prev) => (prev < elements.length - 1 ? prev + 1 : 0));
+          return;
+        }
+        
         if (e.key === 'Enter') {
           e.preventDefault();
-          // Enter en input → confirmar venta si es el último elemento
-          if (currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+          // Seleccionar método de pago
+          if (currentElement?.startsWith('metodo-')) {
+            const metodo = currentElement.replace('metodo-', '') as MetodoPago;
+            setMetodoPago(metodo);
+            setMetodoSeleccionado(true);
+            setFocusedElementIndex(0);
+            
+            // Para efectivo, hacer focus automático en el input
+            if (metodo === 'EFECTIVO') {
+              setTimeout(() => {
+                const inputElement = document.querySelector(`[data-element-id="input-efectivo"]`) as HTMLInputElement;
+                if (inputElement) inputElement.focus();
+              }, 50);
+            }
+          }
+          return;
+        }
+        return;
+      }
+
+      // ===== MÉTODO SELECCIONADO =====
+
+      // ---- EFECTIVO ----
+      if (esEfectivo) {
+        // Si estamos en el input de efectivo
+        if (isInInput && currentElement === 'input-efectivo') {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            // Salir del input y mover al botón confirmar
+            (target as HTMLInputElement).blur();
+            setFocusedElementIndex(1); // btn-confirmar
+          }
+          // Permitir escribir normalmente
+          return;
+        }
+        
+        // Si estamos en btn-confirmar
+        if (currentElement === 'btn-confirmar') {
+          if (e.key === 'Enter' && puedeConfirmar && !procesando) {
+            e.preventDefault();
             confirmarVenta();
+            return;
           }
-          return;
+          
+          // Backspace para volver al input
+          if (e.key === 'Backspace') {
+            e.preventDefault();
+            setFocusedElementIndex(0);
+            setTimeout(() => {
+              const inputElement = document.querySelector(`[data-element-id="input-efectivo"]`) as HTMLInputElement;
+              if (inputElement) inputElement.focus();
+            }, 50);
+            return;
+          }
         }
-        // Permitir todas las demás teclas para escribir
+        
+        // Flechas para navegar entre input y botón
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (!isInInput) {
+            setFocusedElementIndex((prev) => (prev === 0 ? 1 : 0));
+            if (focusedElementIndex === 1) {
+              setTimeout(() => {
+                const inputElement = document.querySelector(`[data-element-id="input-efectivo"]`) as HTMLInputElement;
+                if (inputElement) inputElement.focus();
+              }, 50);
+            }
+          }
+        }
         return;
       }
 
-      // Backspace → Retroceder en navegación (solo si NO estamos en input)
-      if (e.key === 'Backspace') {
-        e.preventDefault();
-        
-        // Si estamos en la selección de método, no hacer nada
-        if (!metodoSeleccionado) return;
-        
-        // Si estamos en otros elementos, retroceder
-        if (focusedElementIndex > 0) {
-          setFocusedElementIndex((prev) => prev - 1);
-        } else {
-          // Si estamos en el primer elemento después de seleccionar método, volver a métodos
-          setMetodoSeleccionado(false);
-          setFocusedElementIndex(0);
-        }
-        return;
-      }
-
-      // ↑ - Navegar arriba
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setFocusedElementIndex((prev) => (prev > 0 ? prev - 1 : elements.length - 1));
-        return;
-      }
-
-      // ↓ - Navegar abajo
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setFocusedElementIndex((prev) => (prev < elements.length - 1 ? prev + 1 : 0));
-        return;
-      }
-
-      // Enter - Acción según elemento enfocado
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        
-        // Si es un botón de método de pago
-        if (currentElement?.startsWith('metodo-')) {
-          const metodo = currentElement.replace('metodo-', '') as MetodoPago;
-          setMetodoPago(metodo);
-          setMetodoSeleccionado(true);
-          setFocusedElementIndex(0); // Resetear a primer elemento del siguiente grupo
-          return;
-        }
-        
-        // Si es el botón de agregar pago (mixto)
-        if (currentElement === 'btn-agregar-pago') {
-          agregarPago({ metodo: 'EFECTIVO', monto: 0 });
-          return;
-        }
-        
-        // Si es el botón de confirmar
-        if (currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+      // ---- DÉBITO / CRÉDITO / TRANSFERENCIA (exacto) ----
+      if (esExacto) {
+        if (e.key === 'Enter' && currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+          e.preventDefault();
           confirmarVenta();
-          return;
         }
-        
-        // Si es un input o select, hacer focus en él
-        if (currentElement?.startsWith('input-') || currentElement?.startsWith('pago-input-') || currentElement?.startsWith('pago-select-')) {
-          // Buscar el elemento en el DOM y hacer focus
-          const inputElement = document.querySelector(`[data-element-id="${currentElement}"]`) as HTMLInputElement | HTMLSelectElement;
-          if (inputElement) {
-            inputElement.focus();
-          }
-        }
-        
         return;
       }
 
-      // Delete - Eliminar pago en mixto
-      if (e.key === 'Delete' && currentElement?.startsWith('pago-delete-')) {
-        e.preventDefault();
-        const idx = parseInt(currentElement.replace('pago-delete-', ''));
-        eliminarPago(idx);
+      // ---- MIXTO ----
+      if (esMixto) {
+        // Si estamos dentro de un SELECT
+        if (isInSelect) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (target as HTMLSelectElement).blur();
+            // Mover al siguiente elemento (input)
+            const nextIndex = focusedElementIndex + 1;
+            if (nextIndex < elements.length) {
+              setFocusedElementIndex(nextIndex);
+              setTimeout(() => {
+                const nextElement = document.querySelector(`[data-element-id="${elements[nextIndex]}"]`) as HTMLElement;
+                if (nextElement) nextElement.focus();
+              }, 50);
+            }
+          }
+          // ArrowUp/Down dentro del select para cambiar opciones (comportamiento nativo)
+          return;
+        }
+
+        // Si estamos dentro de un INPUT de mixto
+        if (isInInput && currentElement?.startsWith('pago-input-')) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (target as HTMLInputElement).blur();
+            // Mover al siguiente elemento
+            const nextIndex = focusedElementIndex + 1;
+            if (nextIndex < elements.length) {
+              setFocusedElementIndex(nextIndex);
+            }
+          }
+          // Permitir escribir normalmente
+          return;
+        }
+
+        // Navegación FUERA de inputs/selects en mixto
+        if (!isInInput && !isInSelect) {
+          // ArrowLeft - mover a la izquierda en la misma fila
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (focusedElementIndex > 0) {
+              setFocusedElementIndex((prev) => prev - 1);
+            }
+            return;
+          }
+
+          // ArrowRight - mover a la derecha en la misma fila
+          if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            if (focusedElementIndex < elements.length - 1) {
+              setFocusedElementIndex((prev) => prev + 1);
+            }
+            return;
+          }
+
+          // ArrowDown - mover al siguiente grupo o botón
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (focusedElementIndex < elements.length - 1) {
+              setFocusedElementIndex((prev) => prev + 1);
+            }
+            return;
+          }
+
+          // ArrowUp - mover al anterior
+          if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (focusedElementIndex > 0) {
+              setFocusedElementIndex((prev) => prev - 1);
+            }
+            return;
+          }
+
+          // Enter sobre elementos
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            // Si es btn-agregar-pago
+            if (currentElement === 'btn-agregar-pago') {
+              agregarPago({ metodo: 'EFECTIVO', monto: 0 });
+              // Mover el foco al nuevo select agregado
+              setTimeout(() => {
+                setFocusedElementIndex(pagos.length * 3); // El nuevo select
+              }, 50);
+              return;
+            }
+            
+            // Si es btn-confirmar
+            if (currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+              confirmarVenta();
+              return;
+            }
+            
+            // Si es un select, hacerle focus para abrirlo
+            if (currentElement?.startsWith('pago-select-')) {
+              const selectElement = document.querySelector(`[data-element-id="${currentElement}"]`) as HTMLSelectElement;
+              if (selectElement) selectElement.focus();
+              return;
+            }
+            
+            // Si es un input, hacerle focus
+            if (currentElement?.startsWith('pago-input-')) {
+              const inputElement = document.querySelector(`[data-element-id="${currentElement}"]`) as HTMLInputElement;
+              if (inputElement) inputElement.focus();
+              return;
+            }
+            
+            // Si es botón delete
+            if (currentElement?.startsWith('pago-delete-')) {
+              const idx = parseInt(currentElement.replace('pago-delete-', ''));
+              eliminarPago(idx);
+              // Ajustar foco después de eliminar
+              if (focusedElementIndex >= elements.length - 1) {
+                setFocusedElementIndex(Math.max(0, focusedElementIndex - 3));
+              }
+              return;
+            }
+          }
+        }
         return;
       }
     };
@@ -200,15 +329,12 @@ export function PaymentPanel({ ventaPort }: Props) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [estado, activeSection, focusedElementIndex, metodoSeleccionado, metodoPago, pagos, puedeConfirmar, procesando, confirmarVenta, setMetodoPago, agregarPago, eliminarPago, esEfectivo, esMixto, esExacto]);
 
-  // Seleccionar EFECTIVO por defecto al abrir el panel y activar sección
+  // Activar sección de pago al abrir el panel (sin auto-seleccionar método)
   useEffect(() => {
     if (estado === 'CALCULANDO_PAGO') {
-      if (!metodoPago) {
-        setMetodoPago('EFECTIVO');
-      }
       setActiveSection('payment'); // Auto-activar sección de pago
     }
-  }, [estado, metodoPago, setMetodoPago, setActiveSection]);
+  }, [estado, setActiveSection]);
 
   // Para débito/crédito/transferencia: el monto pagado ES el total exacto
   useEffect(() => {

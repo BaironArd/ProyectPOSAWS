@@ -168,20 +168,35 @@ export const usePOSStore = create<POSState & POSActions>((set, get) => ({
   setDatosRecibo:   (datos)   => set({ datosRecibo: datos }),
   guardarRecibo:    (datos)   => set((s) => ({ recibosGuardados: { ...s.recibosGuardados, [datos.ventaId]: datos } })),
 
-  resetVenta: () => set((s) => ({
-    carrito:     [],
-    resumen:     { subtotal: 0, iva: 0, total: 0 },
-    query:       '',
-    productos:   [],
-    metodoPago:  null,
-    pagos:       [],
-    montoPagado: 0,
-    cambio:      0,
-    ventaIdActual: null,
-    datosRecibo:   null,
-    estado:        'IDLE',
-    resetCount:    s.resetCount + 1,  // fuerza re-ejecución de useSearch
-  })),
+  resetVenta: () => {
+    set((s) => ({
+      carrito:     [],
+      resumen:     { subtotal: 0, iva: 0, total: 0 },
+      query:       '',
+      productos:   [],
+      metodoPago:  null,
+      pagos:       [],
+      montoPagado: 0,
+      cambio:      0,
+      ventaIdActual: null,
+      datosRecibo:   null,
+      estado:        'IDLE',
+      resetCount:    s.resetCount + 1,  // fuerza re-ejecución de useSearch
+    }));
+    
+    // Restaurar foco al buscador después de resetear
+    setTimeout(() => {
+      // Resetear el focus manager a la sección de productos
+      const { setActiveSection } = require('./useFocusManager').useFocusManager.getState();
+      setActiveSection('products');
+      
+      // Hacer focus en el buscador
+      const searchInput = document.querySelector<HTMLInputElement>('input[type="text"], input[placeholder*="Buscar"]');
+      if (searchInput) {
+        searchInput.focus();
+      }
+    }, 100);
+  },
 
   irAIdle: () => set({
     carrito:     [],

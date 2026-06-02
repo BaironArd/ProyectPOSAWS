@@ -7,10 +7,16 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
 
 .btn:hover { background: #1f2937; }
+
+.btn.btnFocused {
+  background: #1f2937;
+  box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.3);
+  transform: scale(1.02);
+}
 
 /* Ocultar el botón al imprimir */
 @media print {

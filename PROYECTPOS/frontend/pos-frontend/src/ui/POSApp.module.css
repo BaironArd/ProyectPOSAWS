@@ -109,10 +109,16 @@
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
 }
 
 .btnNuevaVenta:hover { background: #4338ca; }
+
+.btnNuevaVenta.btnFocused {
+  background: #4338ca;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3);
+  transform: scale(1.02);
+}
 
 .btnDevolver {
   padding: 0.65rem 1.5rem;
