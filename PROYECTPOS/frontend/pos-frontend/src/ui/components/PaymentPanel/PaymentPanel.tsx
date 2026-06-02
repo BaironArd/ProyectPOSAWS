@@ -99,7 +99,26 @@ export function PaymentPanel({ ventaPort }: Props) {
       const elements = getNavigableElements();
       const currentElement = elements[focusedElementIndex];
 
-      // Backspace → Retroceder en navegación
+      // Si estamos en un input o select, solo permitir Tab y Enter
+      const target = e.target as HTMLElement;
+      const isInInput = target.tagName === 'INPUT' || target.tagName === 'SELECT';
+
+      // Si estamos escribiendo en un input, no interceptar las teclas normales
+      if (isInInput) {
+        // Solo interceptar Enter y Tab cuando estamos en un input
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          // Enter en input → confirmar venta si es el último elemento
+          if (currentElement === 'btn-confirmar' && puedeConfirmar && !procesando) {
+            confirmarVenta();
+          }
+          return;
+        }
+        // Permitir todas las demás teclas para escribir
+        return;
+      }
+
+      // Backspace → Retroceder en navegación (solo si NO estamos en input)
       if (e.key === 'Backspace') {
         e.preventDefault();
         
@@ -156,7 +175,15 @@ export function PaymentPanel({ ventaPort }: Props) {
           return;
         }
         
-        // Si es un input o select, dejar que el usuario interactúe
+        // Si es un input o select, hacer focus en él
+        if (currentElement?.startsWith('input-') || currentElement?.startsWith('pago-input-') || currentElement?.startsWith('pago-select-')) {
+          // Buscar el elemento en el DOM y hacer focus
+          const inputElement = document.querySelector(`[data-element-id="${currentElement}"]`) as HTMLInputElement | HTMLSelectElement;
+          if (inputElement) {
+            inputElement.focus();
+          }
+        }
+        
         return;
       }
 
@@ -256,6 +283,7 @@ export function PaymentPanel({ ventaPort }: Props) {
               const inputIndex = elements.indexOf('input-efectivo');
               if (inputIndex !== -1) setFocusedElementIndex(inputIndex);
             }}
+            data-element-id="input-efectivo"
             className={`${styles.input} ${getNavigableElements()[focusedElementIndex] === 'input-efectivo' ? styles.inputFocused : ''}`}
             placeholder={formatearPrecio(resumen.total)}
             disabled={procesando}
@@ -303,6 +331,7 @@ export function PaymentPanel({ ventaPort }: Props) {
                     const selectIndex = elements.indexOf(selectId);
                     if (selectIndex !== -1) setFocusedElementIndex(selectIndex);
                   }}
+                  data-element-id={selectId}
                   className={`${styles.selectMetodo} ${currentElement === selectId ? styles.selectFocused : ''}`}
                   disabled={procesando}
                 >
@@ -323,6 +352,7 @@ export function PaymentPanel({ ventaPort }: Props) {
                     const inputIndex = elements.indexOf(inputId);
                     if (inputIndex !== -1) setFocusedElementIndex(inputIndex);
                   }}
+                  data-element-id={inputId}
                   className={`${styles.inputMixto} ${currentElement === inputId ? styles.inputFocused : ''}`}
                   placeholder="0"
                   disabled={procesando}
